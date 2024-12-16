@@ -1,0 +1,1996 @@
+﻿2024 - Artigo
+Agora vou anotar aqui os processos que farei para a versão final desse artigo.
+Escolha de Genomas
+* Primeiramente, preciso escolher os genomas:
+   * Busquei três bancos de dados:
+      * NCBI: https://www.ncbi.nlm.nih.gov/datasets/genome/ 
+      * Ensembl: Ensembl 
+      * Vertebrate Genome Project: UCSC Genome Browser Gateway 
+
+
+Felidae - para essa busca, utilizarei um representante de cada gênero disponível. Os gêneros Catopuma, Pardofelis e Leptailurus não têm representantes no NCBI nem no Ensembl.
+* Felis: Felis catus genome assembly F.catus_Fca126_mat1.0 - NCBI - NLM 
+* Prionailurus: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_016509475.1/ 
+* Otocolobus: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_028564725.2/ 
+* Puma: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_003327715.1/ 
+* Acinonyx: Acinonyx jubatus genome assembly VMU_Ajub_asm_v1.0 - NCBI - NLM 
+* Herpailurus: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_014898765.1/
+   * Obs: Illumina Novaseq
+* Catopuma: 
+* Pardofelis: 
+* Lynx: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_007474595.2/ 
+* Leopardus: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_018350155.1/ 
+* Caracal: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_016801355.1/ 
+   * OBS: Illumina HiSeq
+* Leptailurus: 
+* Panthera: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_018350195.1/ 
+* Neofelis: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_028018385.1/ 
+
+
+Felis + Grupo externo - aqui, utilizarei todos os genomas de nível cromossômico disponíveis no gênero Felis, além de um grupo externo do gênero Prionailurus.
+* F. nigripes SNNU: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_032458615.1/
+* F. nigripes HiC: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_028533295.1/
+* F. catus v17: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_000003115.1/
+* F. catus 126: Felis catus genome assembly F.catus_Fca126_mat1.0 - NCBI - NLM
+* F. catus pb1.1: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_016509815.2/
+* F. catus 9.2: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_000181335.6/ 
+* F. chaus: Felis chaus genome assembly FelChav1.0 - NCBI - NLM
+* P. bengalensis: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_016509475.1/ 
+
+
+OBS: os genomas Fni_HiC e Fca_V17 são os únicos nos quais cópias incompletas foram encontradas. Esses dois genomas foram gerados a partir de short reads, e além disso o Fca_V17 é uma quimera de diversos indivíduos. Dessa forma, penso em retirar esses dois genomas das análises futuras. Em ambos os casos, há pelo menos um indivíduo da mesma espécie com um genoma melhor. Todos os outros genomas foram sequenciados com Pacbio.
+BLAST local
+Banco de dados:
+* Extrair genomas do arquivo .gz:
+   * gzip -d *.gz
+* Concatenar genomas no mesmo arquivo:
+   * cat arquivo1.fasta arquivo2.fasta arquivo3.fasta > arquivofinal.fasta
+* Criar banco de dados
+   * makeblastdb -in “fasta dos genomas” -dbtype nucl -parse_seqids
+
+
+Queries:
+* Já tenho eles separados e juntos na pasta Queries
+* Utilizei o arquivo que já tem todos os queries juntos.
+
+
+Busca por BLAST:
+* blastn -db db_genomas_felis.fasta -query query_enfelv_todos.txt -out result_felis_todos -outfmt "6 qseqid sseqid sstart send sseq"  -qcov_hsp_perc 50
+
+
+Para modificar os arquivos pro formato FASTA: 
+* Encontrar: ^.+?\t(.+)\t(\d+)\t(\d+)\t(.+)
+* Substituir: >\1_\2_\3\n\4
+* Ao invés disso, posso usar o blastdbcmd
+Completar genomas
+Utilizando o BLAST, é possível extrair uma região específica do genoma, apontando o número de acesso e a base de início e fim, no formato ‘ACESSO inicio-fim’. Algumas etapas serão necessárias para realizar esse processo:
+
+
+Com regex, vou transformar os resultados do BLAST no formato necessário:
+* Encontrar: ^.+?\t(.+)\t(\d+)\t(\d+)\t(.+)
+* Substituir: \1 \2-\3
+
+
+Em seguida, eu utilizei o LibreOffice Calc e Notepad++ para:
+* remover resultados redundantes,
+* inverter a base de início e fim de resultados encontrados na fita reversa,
+* adicionar 8 kb nos valores de início e fim.
+
+
+Agora, o comando do BLAST:
+blastdbcmd -db db_genomas_felis.fasta -entry_batch loc_felis_todos.txt -out 8k_felis_todos.txt
+Anotação das Cópias
+Estava pensando aqui, e ao invés da forma que eu vinha fazendo, eu posso anotar diretamente as regiões ao redor dos resultados, e só então fazer os cortes necessários. Vou testar isso na segunda, mas já vou preparar o comando por aqui. 
+* Por enquanto estou pensando em usar o PseudoPipe que é especializado em pseudogenes.
+* GO FEAT parece ser uma ferramenta simples que faz anotação preditiva e funcional. Pode ser útil para pegar promotores, etc.
+* Uma das versões do GeneMark pode funcionar também.
+* Também existe a opção de utilizar o RetroTector, se eu conseguir.
+* Se nenhuma das opções funcionar, posso sempre voltar para o Geneious.
+
+
+Utilizei o Geneious por enquanto. Posso experimentar com os outros programas depois.
+* Tabelei os resultados:Anotações enFeLV Selvagens de acordo com:
+   * Genomas de origem
+   * Tipos de cópias
+   * Genes
+   * Peptídeos
+
+
+Fiz testes qui-quadrados para a composição gênica de cada genoma. Individualmente, nenhuma delas apontou para uma diferença significativa, mas um teste feito com o total de cópias de todos os genomas apontou para uma diferença significativa.
+
+
+chisq.test(data$Fca_V17)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fca_V17
+X-squared = 1, df = 2, p-value = 0.6065
+
+
+Warning message:
+In chisq.test(data$Fca_V17) : Chi-squared approximation may be incorrect
+> chisq.test(data$Fca_9.2)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fca_9.2
+X-squared = 2.2727, df = 2, p-value = 0.321
+
+
+> chisq.test(data$Fca_Pb1.1)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fca_Pb1.1
+X-squared = 3.3793, df = 2, p-value = 0.1846
+
+
+> chisq.test(data$Fca_126)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fca_126
+X-squared = 0.85714, df = 2, p-value = 0.6514
+
+
+> chisq.test(data$Fni_SNNU)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fni_SNNU
+X-squared = 3.44, df = 2, p-value = 0.1791
+
+
+> chisq.test(data$Fni_HiC)
+Error in sum(x) : invalid 'type' (character) of argument
+> chisq.test(data$Fch_1.0)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$Fch_1.0
+X-squared = 2.0563, df = 2, p-value = 0.3577
+
+
+> chisq.test(data$TOTAL)
+
+
+        Chi-squared test for given probabilities
+
+
+data:  data$TOTAL
+X-squared = 11.341, df = 2, p-value = 0.003446
+
+
+
+
+
+
+Assinaturas genômicas
+* Vou pegar as assinaturas de cada cópia.
+* Criei uma base de dados com as regiões flanqueadoras de cada cópia com: 
+
+
+makeblastdb -in ./Assinaturas/8k_felis_todos.txt -dbtype nucl -parse_seqids
+
+
+* Agora vou fazer um BLAST com a LTR:
+
+
+blastn -db 8k_felis_todos.txt -query query_enfelv_3LTR.txt -out 3LTR_felis_todos -outfmt "6 sseqid sstart send"  -qcov_hsp_perc 80
+
+
+* Em seguida, peguei as posições desse blast e reorganizei no Libreoffice calc e usei o regex do bloco de notas. Então, usei o blastcmd pra pegar as assinaturas:
+
+
+blastdbcmd -db 8k_felis_todos.txt -entry_batch 3LTR_felis_todos.txt -out ass_felis_todos.txt
+
+
+Filogenia
+Em seguida, vou tentar fazer uma árvore concatenada dos genes. Esse Capítulo (The concatenation question) discute exatamente sobre concatenar ou não as suas sequências no contexto de filogenômica. Posso perguntar para o pessoal do Eduardo também o que eles acham.
+* Alinhamento: mafft --auto “arquivo não alinhado” > “arquivo alinhado”
+
+
+mafft --auto gag_felis_tipicos.fasta > 24.04.12_aln_felis_gag.fasta
+mafft --auto pol_felis_tipicos.fasta > 24.04.12_aln_felis_pol.fasta
+mafft --auto env_felis_tipicos.fasta > 24.04.12_aln_felis_env.fasta
+
+
+* Edição: trimal -automated1 -in “arquivo alinhado” -out “arquivo trimado”
+
+
+trimal -automated1 -in 24.04.12_aln_felis_gag.fasta -out 24.04.12_trm_felis_gag.fasta
+trimal -automated1 -in 24.04.12_aln_felis_pol.fasta -out 24.04.12_trm_felis_pol.fasta
+trimal -automated1 -in 24.04.12_aln_felis_env.fasta -out 24.04.12_trm_felis_env.fasta
+
+
+* Antes de fazer a árvore, preciso renomear as sequências para usar o concatenador do Filipe. 
+   * Encontrar: .
+   * Substituir: _
+   * Encontrar: _-_.+\n
+   * Substituir: \n
+* Último passo é usar o concatenador. Na verdade são dois scripts. Pro primeiro eu tenho que criar um novo arquivo com a lista de fastas que eu quero concatenar, então:
+
+
+perl tax_density.pl lista_fastas.txt
+
+
+* Em seguida, checar o arquivo de saída “tax_density.txt” para garantir que tudo está nos conformes (ex.: se não há entradas com mais genes do que deveria), e então usar o próximo script:
+
+
+perl concatenador_noob.pl lista_fastas.txt tax_density.txt
+
+
+* Esse script vai dar o alinhamento concatenado, e então é só seguir para a filogenia em si.
+ 
+* Filogenia:
+
+
+iqtree -s ./concat.fasta -m TEST -bb 1000 -alrt 1000 
+
+
+* Falei com o Filipe e ele sugeriu que o ideal é fazer o máximo de métodos possíveis. Por isso, além da árvore concatenada, vou fazer árvores de genes. Para isso, vou usar os mesmos alinhamentos que usei pra árvore concatenada. Com isso, só foi necessário separá-los em pastas e rodar o iqtree.
+
+
+iqtree -s ./24.04.15_arv_gag -m TEST -bb 1000 -alrt 1000 
+iqtree -s ./24.04.15_arv_pol -m TEST -bb 1000 -alrt 1000 
+iqtree -s ./24.04.15_arv_env -m TEST -bb 1000 -alrt 1000 
+
+
+* Então, produzi todas as árvores e botei nessa apresentação Árvores enFeLV 04/2024 para poder compará-las.
+
+
+Agora, tenho que fazer duas coisas: interpretar essas árvores e planejar os próximos passos. Com isso, acho que é uma boa me dedicar a outros assuntos pelos próximos dias.
+
+
+Interpretação das árvores
+* Essas árvores não representam necessariamente a filogenia de enFeLV, devido a alta taxa de mutação de gag e env, os genes mais representados.
+* Primeiramente, interpretações gerais de cada árvore:
+   * Concatenada: 
+      * é a árvore mais robusta em questão de sinal filogenético, já que foi feita a partir de um alinhamento de 7055 nt. Ela não apresenta grupos tão bem definidos quanto a árvore antiga. Ao invés disso, vemos um clado com diversos grupos monofiléticos. 
+      * Um dos grupos mais primitivos inclusive é o de Felis chaus, com uma sequência de Felis catus como grupo externo (GTTT Fca_Pb1_1). As cópias não formam mais (tanto) um pente, e é possível identificar um clado diferenciado com 8/27 cópias.
+         * Peguei um erro aqui: a cópia ACAG do Fca126 está inserida no meio das cópias de F. chaus, e está colorida errado
+      * As sequências de Felis nigripes se agruparam nos clados mais derivados: 9/11 formam clados exclusivos, enquanto as outras duas estão isoladas ou inseridas como grupo externo de um clado de cópias de F. catus - essas cópias parecem ser antigas, já que a mesma assinatura é encontrada em 2 ou 3 indivíduos.
+      * O indivíduo Fca_9_2 chama atenção devido a seus ramos longos em 4/9 cópias (TTAT, TGTT, ATAC e GTTC). Já tinha visto isso anteriormente, mas talvez seja algo para conversar com o Eduardo, para garantir que não é problema do genoma. Cópias com a mesma assinatura são encontradas em outros indivíduos em ¾ dessas cópias, e nos outros indivíduos esses ramos longos não são encontrados.
+      * As cópias de assinatura GGAG, presente em 2/4 indivíduos de Felis catus, se estabeleceu como a cópia mais primitiva do clado, seguida de TTAT, que só é encontrada no indivíduo Fca_9_2.
+   * Árvore gag:
+      * Aqui vemos a formação dos dois grupos. No primeiro vemos três assinaturas de Felis catus (ATGG - 3 ind, TGAC - 3 ind, GTTC - 2 ind) e uma cópia de F. nigripes (ATAA) - o mesmo clado é visto na árvore concatenada na posição mais derivada.
+      * No segundo clado vemos um grupo primitivo formado pelas outras sequências de F. nigripes e a cópia CTTG de Fca126
+      * As cópias GGAG estão mais próximas de F. chaus, na posição mais derivada do seu clado.
+   * Árvore pol:
+      * Essa árvore possui menos cópias. A base da árvore se manteve a mesma da concatenada: TTAT de Fca9.2 e GGAG.
+      * Em seguida, três clados se formam: o primeiro possui as cópias de F. nigripes e mais algumas de F. catus. O segundo possui as cópias de F. chaus e a cópia ACAG do Fca126. O terceiro possui as assinaturas ATAC e CTGT.
+   * Árvore env: 
+      * A base da árvore mudou: agora é a cópia CTAA de Fca9.2, seguida pela formação de dois clados.
+      * O primeiro possui as cópias de F. nigripes. Vemos o mesmo grupo de cópias de F. catus com a assinatura ATAA de F. nigripes como grupo externo. O mesmo grupo de sete cópias de F. nigripes se repetiu também.
+      * Muito mais cópias de Fca estão no clado compartilhado com Fni em relação àquelas encontradas no clado compartilhado com Fch. Esse padrão é contrário ao achado nas outras árvores.
+* Felis nigripes:
+   * De maneira geral:
+      * concatenada: forma o clado mais derivado, contendo todas as cópias de Fni + 9 Fca.
+      * gag: divididas em dois clados. 9 Fni + CTTG Fca126 como um grupo dentro do clado majoritário da árvore, e 1 Fni + 8 Fca formando o clado minoritário da árvore.
+      * pol: forma um dos clados majoritários da árvore, contendo 4 Fni + 4 Fca.
+      * env: forma um dos clados majoritários da árvore, formando uma politomia. O clado contém 11 Fni + 16 Fca. 
+   * Temos um total de 11 Fni para análise. Elas formaram três grupos principais:
+      * Um grupo monofilético de 7 cópias que não possui a região da pol e não parece ter cópias próximas no gato doméstico.
+         * Concatenada: primitivo em relação às outras cópias de Fni.
+         * gag: uma das cópias está ausente. Parte do grupo mais primitivo do maior clado, junto das outras cópias de Fni.
+         * pol: ausente
+         * env: grupo irmão de cópias de gato doméstico de assinaturas TGTT e CTAG, formando um clado monofilético cujo grupo externo é a cópia  CTTG Fca126
+      * Um grupo monofilético de 2 cópias (CTGT + CAGG).
+         * Concatenada: grupo externo do clado de 2Fni + 8Fca. CTTG Fca126 como sequência derivada do grupo 
+         * gag: grupo irmão do clado 7 Fni. CTTG Fca126 como grupo externo do grupo CTGT + CAGG Fni.
+         * pol: grupo externo do clado 2Fni + 8Fca. CTTG Fca126 como grupo irmão de CTCT Fni, derivado ao grupo CTGT + CAGG Fni.
+         * Env: Parte do pente do clado contendo as cópias de Fni. CTTG Fca126 está afastado.
+      * Um grupo de duas cópias (CTCT e ATAA) que serve como grupo externo de um clado de 8 cópias de F. catus que apresentam três assinaturas: ATGG - 3 ind, TGAC - 2 ind, GTTC - 3 ind.
+         * Concatenada: grupo mais derivado da árvore.
+         * gag: ATAA como grupo externo do clado mais primitivo da árvore. CTCT como grupo externo do clado CTGT + CAGG
+         * pol: grupo mais derivado do clado contendo cópias de F. nigripes.
+         * env: um clado no pente formado pelo clado contendo cópias de F. nigripes.
+
+
+* Um padrão em todas as árvores são as cópias de Felis chaus formarem um grupo monofilético. Agora que fiz diferentes árvores, temos algumas informações extras:
+   * Concatenada: grupo monofilético contendo Fch + ACAG Fca126. Terceiro clado a divergir (politomia), com a cópia GTTT Fca Pb1.1 como grupo externo ao clado Fch + ACAG Fca126.
+   * gag: sequências derivadas num clado contendo maior parte das cópias de Fca. Cópias em um pente contendo Fch + 6 Fca, inclusive ACAG Fca126 e GTTT FcaPb1.1.
+   * pol: um clado saindo de uma politomia, contendo Fch + ACAG Fca126. GTTT Fca Pb1.1 está saindo da politomia também.
+   * env: um clado formado a partir de uma politomia contém Fch + ACAG Fca126 + GTTT Fca Pb1.1. Essa politomia é parte de um dos dois grupos majoritários da árvore, contendo as cópias de Fch + 10 Fca.
+
+
+* Como temos quatro indivíduos de Felis catus, vou começar analisando as assinaturas compartilhadas a partir da 
+   * Árvore concatenada:
+      * Clado 1: GGAG: 126 + Pb1.1
+      * Clado 2: TTAT: 9.2
+      * Clado 3: 
+         * ACAG: 126
+         * Fch
+         * GTTT: Pb1.1
+      * Clado 4: ATAC: 9.2 + Pb1.1
+      * Clado 5: CTGT: 9.2 + 126
+      * Clado 6: CTCT: Pb1.1
+      * Clado 7:
+         * TGTT: Pb1.1 + 9.2
+         * CTAG: Pb1.1
+      * Clado 8:
+         * GTTT: 126
+            * A assinatura GTTT está presente nos genomas Pb1.1 e 126, mas é a única assinatura cujas cópias não são grupos irmãos na filogenia.
+         * CTAA: 9.2
+         * AGCC: Pb1.1
+         * ATAG: Pb1.1
+         * AAAC: Pb1.1
+            * Antes havia uma cópia de Fca126 com essa assinatura, tenho que descobrir o que aconteceu.
+         * O clado 8 contém 5 cópias de assinaturas diferentes, cada uma específica de seu genoma. Possivelmente são cópias que se dispersaram recentemente.
+      * Clado 9: Fni
+      * Clado 10: Fni
+      * Clado 11: CTTG: 126
+      * Clado 12: Fni
+      * Clado 13: 
+         * Fni
+         * ATGG: 126 + 9.2 + Pb1.1
+         * GTTC: 126 + 9.2 + Pb1.1
+         * TGAC: Pb1.1 + v17
+         * O clado 13 contém todas as cópias presentes nos 3 genomas de boa qualidade - possivelmente cópias compartilhadas por todos os gatos domésticos, o que é corroborado pelo fato de compartilhar o clado com cópias de Fni.
+   * Árvore gag:
+      * Clado 1:
+         * ATGG x3
+         * GTTC x3
+         * TGAC x2
+         * Fni x1
+         * O clado 13 contém todas as cópias presentes nos 3 genomas de boa qualidade - possivelmente cópias compartilhadas por todos os gatos domésticos, o que é corroborado pelo fato de compartilhar o clado com cópias de Fni.
+      * Clado 2:
+         * Fni x 9
+         * CTTG x1
+      * Clado 3: 
+         * ATAG x1
+         * AGCC x1
+         * GTTT x1
+         * CTAA x1
+         * AAAC x1
+         * O clado 3 (clado 8 da concatenada) contém 5 cópias de assinaturas diferentes, cada uma específica de seu genoma. Possivelmente são cópias que se dispersaram recentemente.
+      * Clado 4: 
+         * TGTT x2
+         * CTAG x1
+      * Clado 5: TTAT x1
+      * Clado 6: CTCT x1
+      * Politomia:
+         * Clado 1: ATAC x2
+         * Clado 2: GGAG x2
+         * Clado 3: 
+            * ACAG x1
+            * Fch x1
+         * Clado 4: CTGT x2
+         * Clado 5: Fch x19
+         * Individuais:
+            * Fch x6
+            * GTTT x1
+   * pol: 
+      * Clado 1: TTAT
+      * Clado 2: GGAG
+      * Politomia:
+         * Clado 3:
+            * ATAC
+            * CTGT
+         * Clado 4:
+            * Fch
+            * ACAG
+         * Clado 5: GTTT Pb1.1
+         * Clado 6: 
+            * CTCT
+            * Fni
+            * CTTG
+            * ATGG
+   * env:
+      * Clado 1: CTAA
+      * Clado 2:
+         * Politomia:
+            * Clado 1:
+               * CTTG
+               * TGTT
+               * CTAG
+               * Fni
+            * Individuais:
+               * ATAG
+               * GTTT 126
+               * AAAC
+               * AGCC
+            * Clado 2:
+               * Fni
+               * ATGG
+               * TGAC
+               * GTTC
+            * Clado 3: Fni
+      * Clado 3: CTCT
+      * Clado 4: CTGT
+      * Clado 5: 
+         * GGAG
+         * ATAC
+         * TTAT
+         * GTTT Pb1.1
+         * ACAG
+         * Fch
+
+
+Mineração Exploratória
+* Aqui o objetivo era expandir a busca. Utilizando o parâmetro de cobertura, como eu vinha usando até aqui, eu não encontrei nenhum resultado “negativo” pelo BLAST, ou seja, hits marcados pelo BLAST que segundo a filogenia não eram enFeLV. Com isso, vou tentar usar um limite de Identidade de 70% e checar os resultados. Vou fazer isso tanto dentro do gênero Felis quanto nos felinos como um todo. Vou utilizar todos os genes como query (mas não LTR nem ) e comparar os resultados.
+
+
+* Hoje quero fazer a mineração da família Felidae, para então fazer uma filogenia e definir se enFeLV está presente fora do gênero Felis ou não.
+   * Ideia: no artigo, escrever essas etapas na ordem em que foram feitas. Como justificativa, a mineração do gênero Felis foi utilizada para estabelecer o método e a mineração da família foi feita em seguida utilizando os mesmos parâmetros 
+      * mas não foram utilizados os mesmos parâmetros no final. A busca por BLAST na família Felidae apresentou resultados apenas no gato doméstico.
+* Para isso, preciso dos seguintes comandos:
+   * Criar banco de dados:
+
+
+* Extrair genomas do arquivo .gz:
+
+
+gzip -d *.gz
+
+
+* Concatenar genomas no mesmo arquivo:
+
+
+cat *.fasta > db_genomas_felidae.fasta
+
+
+* Criar banco de dados
+
+
+makeblastdb -in db_genomas_felidae.fasta -dbtype nucl -parse_seqids
+
+
+* Queries:
+   * Já tenho eles separados e juntos na pasta Queries
+   * Utilizei o arquivo que já tem todos os queries juntos.
+
+
+
+
+* BLAST Felis:
+blastn -db db_Felis/db_genomas_felis.fasta -query query_enfelv_todos.txt -out result_felis_todos_ident -outfmt "6 qseqid sseqid sstart send sseq"  -perc_identity 70
+
+
+* BLAST Felidae:
+blastn -db db_Felidae/db_genomas_felidae.fasta -query query_enfelv_todos.txt -out result_felidae_todos -outfmt "6 qseqid sseqid sstart send sseq"  -perc_identity 70
+
+
+Com regex, vou transformar os resultados do BLAST no formato necessário:
+* Encontrar: ^.+?\t(.+)\t(\d+)\t(\d+)\t(.+)
+* Substituir: \1 \2-\3
+
+
+Em seguida, eu utilizei o LibreOffice Calc e Notepad++ para:
+* remover resultados redundantes e originados de LTR ou da sequência completa,
+* inverter a base de início e fim de resultados encontrados na fita reversa,
+* adicionar 8kb nos valores de início e fim.
+
+
+Agora, o comando do BLAST para pegar sequências:
+blastdbcmd -db db_Felidae/db_genomas_felidae.fasta -entry_batch loc_felidae_todos_ident70.csv -out 8k_felidae_todos_ident70.txt
+
+
+blastdbcmd -db ../BLAST_local/db_Felis/db_genomas_felis.fasta -entry_batch loc_felis_todos_ident70.csv -out 8k_felis_todos_ident70.txt
+
+
+Com isso, tenho as regiões genômicas onde foram encontrados esses resultados. Vou usar o MAFFT para alinhar essas regiões.
+* Primeiro, adicionar referências:
+
+
+cat 8k_felis_todos_ident70.txt refs.fasta > 24.05.20_ori_felis_ident70.fasta
+cat 8k_felidae_todos_ident70.txt refs.fasta > 24.05.20_ori_felidae_ident70.fasta
+
+
+* Alinhamento:
+mafft --auto 24.05.20_ori_felis_ident70.fasta > 24.05.20_aln_felis_ident70.fasta
+mafft --auto 24.05.20_ori_felidae_ident70.fasta > 24.05.20_aln_felidae_ident70.fasta
+
+
+
+
+* Trimal:
+trimal -automated1 -in 24.05.20_aln_felidae_ident70.fasta -out 24.05.20_trm_felidae_ident70.fasta
+trimal -automated1 -in 24.05.20_aln_felis_ident70.fasta -out 24.05.20_trm_felis_ident70.fasta
+
+
+* Mudar nome de arquivos:
+mv 24.05.20_trm_felidae_ident70.fasta ./24.05.23_arv_felidae_ident70/24.05.23_arv_felidae_ident70.fasta
+mv 24.05.20_trm_felis_ident70.fasta ./24.05.23_arv_felis_ident70/24.05.23_arv_felis_ident70.fasta
+
+
+* Árvores:
+iqtree -s ./24.05.23_arv_felidae_ident70/24.05.23_arv_felidae_ident70.fasta -m TEST -bb 1000 -alrt 1000
+iqtree -s ./24.05.23_arv_felis_ident70/24.05.23_arv_felis_ident70.fasta -m TEST -bb 1000 -alrt 1000
+Datações
+* Peguei as anotações de LTRs das cópias completas e reduzidas
+* Alinhei par-a-par usando o Muscle no Aliview
+* Fiz uma matriz de distância par-a-par usando o MEGA 11
+* Usei o LibreOffice calc pra calcular as datações a partir da matriz usando a fórmula =Dist/(2*4,6*10^-9) 240419_dat_LTR_tipicos.xls
+* Botei as datações na árvore concatenada na apre Apre Perspectivas Mestrado. 
+
+
+O próximo passo é fazer a imagem conjugada com datações e anotações.
+* Analisando melhor as árvores, está ficando muito claro pra mim que há algum processo interferindo no sinal filogenético. Analisar as árvores como estão pode ser perda de tempo. Vou avaliar a possibilidade de recombinação:
+
+
+Atualização 07/24
+* Tentei fazer uma timetree com o meu dataset. Segui o tutorial da prof. Bia no link: Estimating TimeTrees with MEGA and the TimeTree Resource
+* Fiz duas tentativas, com tip dating usando a data de coleta das amostras e com tempos relativos.
+* Conversei com o Filipe, ele disse que esses métodos provavelmente não vão funcionar, porque a variação na data de coleta não é grande o suficiente pra permitir essa técnica. Além disso, utilizar vírus exógenos e endógenos no mesmo dataset traz uma nova problemática que é a variação na taxa de mutação.
+* Ele sugeriu olhar artigos que dataram ERVs, como o de celacanto, etc. Mas acho que só vou encontrar aquele método das LTRs.
+   * O artigo de celacanto usa o BEAST: An Endogenous Foamy-like Viral Element in the Coelacanth Genome 
+   * Vou pegar nisso depois. 
+Recombinação (RDP4)
+* Peguei um manual no site do distribuidor: RDP5 Instruction Manual 
+* Usei o “A STEP-BY-STEP GUIDE TO USING RDP5” como guia.
+* Não consegui usar o SDT, então só botei o meu alinhamento geral mesmo.
+* Rodei com a opção “Disentangle overlapping events”. Formou um looping. Reiniciei a corrida sem essa opção.
+* Pelo visto é um programa para rodar várias vezes e explorar os resultados.
+* Algumas referências pra interpretar os resultados que eu recebi:
+   * How do I identify correct recombination events worked out using RDP 4 software? | ResearchGate 
+      * Nesse forum, recomendaram esse manual, estou acompanhando ele enquanto analiso minhas sequências: https://www.researchgate.net/profile/Ali-Kamran-4/post/How-do-I-identify-correct-recombination-events-worked-out-using-RDP-4-software/attachment/5b5fd5ae4cde265cb652b1ff/AS%3A654294101553153%401533007278424/download/Detecting+and+Analyzing+Genetic+Recombination+using+RDP4.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InF1ZXN0aW9uIiwicGFnZSI6InF1ZXN0aW9uIn19
+   * Identifying Recombination Hot Spots from Sequence Polymorphism Data
+* Estou usando os arquivos na pasta Alinhamentoscomo base. Lá há alinhamentos de todas as cópias com genes que encontrei.
+
+
+Passo-a-passo RDP4
+* Inserir alinhamento no programa
+* Mudar opções (options):
+   * Definir sequências lineares ou circulares
+   * Definir quais programas serão usados
+      * Quanto mais melhor, mas pode aumentar a duração da corrida.
+   * Testar com opção “Disentangle” marcada. 
+      * É possível que a corrida entre num loop. Caso isso aconteça, matar a corrida, desmarcar a opção e rodar de novo.
+   * “Do not show plots during scan” pode diminuir o tempo da corrida.
+   * Mais avançado: modificar a janela de leitura dos programas, mas por enquanto não vou fazer isso.
+* Rodar corrida inicial com o botão “Run”.
+* Próximo passo: análise dos resultados iniciais.
+   * Estou usando o manual RDP5 Instruction Manual (10.4 Testing and Refining Preliminary Recombination Hypotheses) e o capítulo Detecting and Analyzing Genetic Recombination Using RDP4 (2.4 Making a Recombination-Free Dataset)
+
+
+Obs: desenvolvi uma regex para pegar as sequências de enFeLV inteiras de acordo com o hospedeiro. Vou guardar aqui caso seja necessário depois:
+* Encontrar: ^>.+_Fc(a|h).+\n(\w*\-*\w*\-*\w*\-*\w*\-*\w*\-*\w*\-*\w*\-*\w*\n)+
+   * para encontrar Felis catus e Felis chaus.
+
+
+Agora, estou apurando os alinhamentos manualmente usando o Aliview e o Muscle. Então, separei os resultados de acordo com a espécie:
+* Em F. chaus não parece haver recombinação entre as sequências.
+* Em F. nigripes não parece haver recombinação entre as sequências.
+* Em F. catus estou testando um indivíduo de cada vez:
+   * Fca126: parecem ter ocorrido um ou dois eventos na região entre os genes pol e env.
+   * Fca_Pb1.1: apontou um evento de recombinação na região da pol. A recombinação teria dado origem a cinco sequências, mas o sinal se mistura com a perda da pol. 
+   * Fca_9.2: uma bagunça kkkkk parece que ocorreram diversos eventos de recombinação. É mais provável que outros processos estejam acontecendo nesse genoma… Será que é só má montagem?
+
+
+Agora vou refazer as árvores retirando as sequências do Fca_9.2.
+* Feita. Não houveram mudanças significativas na topologia, mas aumentou muito a definição.
+Artigo 1: Dinâmica evolutiva de enFeLV no gênero Felis
+Padronizar filogenias
+Definir que árvores vou fazer e os parâmetros:
+* Grupo externo: Epsilonretrovirus
+* Query exploratório: pol
+   * Usando as LTRs, que são extremamente conservadas, consegui encontrar todos os resultados de Felis catus, mas nenhum resultado além desse. 
+* Árvores:
+* Felidae exploratório
+* Felis exploratório
+* Cópias completas
+* Concatenadas
+   * gag + pol + env
+   * gag + env
+* Árvores de genes:
+   * gag
+   * pol
+   * env
+
+
+Extrair região ERV para árvore exploratória. Para isso, vou precisar:
+* Voltar nos bancos de dados de Felis e Felidae
+* Fazer novos BLASTs com as LTRs. Considerando o quanto elas são conservadas, acho que posso buscar diretamente nos genomas. Caso eu encontre uma, é bastante provável que eu encontre a outra.
+* Ajustar os resultados pra fazer o blastdbcmd e pegar as sequências completas.
+   * Pergunta: fazer árvore só de LTRs?
+* Não encontrei LTRs. Sinal de que não há enFeLV nas outras espécies. Ao invés disso, vou apenas fazer uma árvore com resultados de pol + 4k.
+
+
+Falei com o André:
+* Grupo externo: Deltaretrovirus
+* Query exploratório: pol
+* Árvores: todas
+
+
+Novas árvores exploratórias
+* BLAST
+blastn -db ../Mineracao_exploratoria/db_Felidae/db_genomas_felidae.fasta -query query_enfelv_pol.txt -out result_felidae_pol.txt -outfmt "6 sseqid sstart send" -perc_identity 50
+blastn -db ../BLAST_local/db_Felis/db_genomas_felis.fna -query query_enfelv_pol.txt -out result_felis_pol.txt -outfmt "6 sseqid sstart send"  -perc_identity 50
+
+
+* Fórmulas LibreOffice Calc:
+   * T1
+=IF(B1<C1;IF(B1<4001;1;B1-4000);IF(C1<4001;1;C1-4000))
+=IF(B1<C1;C1+4000;B1+4000)
+
+
+* T2
+=IF(B1<C1;IF(B1<2001;1;B1-2000);IF(C1<2001;1;C1-2000))
+=IF(B1<C1;C1+2000;B1+2000)
+
+
+* Regex Notas:
+Encontrar: “\t(\d+)\t(\d+)”
+Substituir: “ \1-\2”
+* BLAST cmd pra pegar os FASTAS:
+   * T1:
+blastdbcmd -db ../Mineracao_exploratoria/db_Felidae/db_genomas_felidae.fasta -entry_batch loc_felidae_pol.txt -out 4k_felidae_pol.txt
+blastdbcmd -db ../BLAST_local/db_Felis/db_genomas_felis.fna -entry_batch loc_felis_pol.txt -out 4k_felis_pol.txt
+
+
+* T2:
+blastdbcmd -db ../Mineracao_exploratoria/db_Felidae/db_genomas_felidae.fasta -entry_batch loc_felidae_pol.txt -out 2k_felidae_pol.txt
+blastdbcmd -db ../BLAST_local/db_Felis/db_genomas_felis.fna -entry_batch loc_felis_pol.txt -out 2k_felis_pol.txt
+
+
+* Adicionar referências
+cat 4k_felidae_pol.txt refs_gamma_epsilon.fasta > 24.06.17_ori_felidae_pol_refs.fasta
+cat 4k_felis_pol.txt refs_gamma_epsilon.fasta > 24.06.17_ori_felis_pol_refs.fasta
+* T2:
+cat 2k_felidae_pol.txt refs_retro.fasta > 24.06.17_ori_felidae_pol_refs.fasta
+cat 2k_felis_pol.txt refs_retro.fasta > 24.06.17_ori_felis_pol_refs.fasta
+
+
+* Alinhamento + trimal
+   * Estou testando novos parâmetros do trimal:
+      * -keepheader faz com que caracteres não alfanuméricos sejam mantidos, o que facilita minha vida de não ter que renomear as sequências.
+      * -seqoverlap deve retirar sequências que possuem 50% ou menos de bases “úteis” (que não sejam gap ou indeterminado).
+   * T1:
+mafft --auto 24.06.17_ori_felidae_pol_refs.fasta > 24.06.17_aln_felidae_4k_refs.fasta
+trimal -automated1 -in 24.06.17_aln_felidae_4k_refs.fasta -out 24.06.17_trm_felidae_4k.fasta -keepheader -seqoverlap 50
+
+
+mafft --auto 24.06.17_ori_felis_pol_refs.fasta > 24.06.17_aln_felis_4k_refs.fasta
+trimal -automated1 -in 24.06.17_aln_felis_4k_refs.fasta -out 24.06.17_trm_felis_4k.fasta -keepheader -seqoverlap 50
+
+
+* T2:
+mafft --auto 24.06.17_ori_felidae_pol_refs.fasta > 24.06.17_aln_felidae_2k_refs.fasta
+trimal -automated1 -in 24.06.17_aln_felidae_2k_refs.fasta -out 24.06.17_trm_felidae_2k.fasta
+
+
+mafft --auto 24.06.17_ori_felis_pol_refs.fasta > 24.06.17_aln_felis_2k_refs.fasta
+trimal -automated1 -in 24.06.17_aln_felis_2k_refs.fasta -out 24.06.17_trm_felis_2k.fasta
+
+
+* Checagem manual das sequências no Aliview
+Sequências com menos de 50% de comprimento sem gaps
+Sequências com mais de 50% de bases “n”
+
+
+* Árvre
+iqtree -s ./24.06.18_arv_felidae_2k_refs/24.06.18_arv_felidae_2k.fasta -m TEST -bb 1000 -alrt 1000 
+iqtree -s ./24.06.17_arv_felis_4k/24.06.17_arv_felis_4k.fasta -m TEST -bb 1000 -alrt 1000 
+
+
+* T2
+iqtree -s ./24.06.18_arv_felidae_2k_refs/24.06.18_arv_felidae_2k_refs.fasta -m TEST -bb 1000 -alrt 1000
+
+
+Outras árvores (completas, genes e concatenadas)!!
+* Uma mudança que quero implementar é a adição de um comando ao trimal:
+   * -keepheader
+      * Keep original sequence header including non-alphanumeric characters. Only available for input FASTA format files.
+
+
+* Aqui tenho os comandos usados para produzir todas as árvores do artigo.
+* Árvore cópias completas
+cat 8k_felis_tipicos.fasta refs_retro.fasta > 24.06.24_ori_completo_refs.fasta
+mafft --auto 24.06.24_ori_completo_refs.fasta > 24.06.24_aln_completo_refs.fasta
+trimal -automated1 -in 24.06.24_aln_completo_refs.fasta -out 24.06.24_trm_completo_refs.fasta -keepheader 
+aliview 24.06.24_trm_completo_refs.fasta
+mkdir 24.06.24_arv_completo_refs
+mv 24.06.24_trm_completo_refs.fasta 24.06.24_arv_completo_refs/24.06.24_arv_completo_refs.fasta
+iqtree -s 24.06.24_arv_completo_refs/24.06.24_arv_completo_refs.fasta -m TEST -bb 1000 -alrt 1000 
+
+
+* Em seguida, pegar todos os arquivos na pasta:  temp 24.06.24
+   * Lembrando que essas sequências já estão alinhadas, e talvez isso dê um problema pra rodar o mafft direto. Caso isso aconteça é só abrir os arquivos no aliview e tirar os gaps automaticamente.
+* Árvore gag
+
+
+cat 24.04.12_aln_felis_gag.fasta refs_retro.fasta > 24.06.24_ori_gag_refs.fasta
+mafft --auto 24.06.24_ori_gag_refs.fasta > 24.06.24_aln_gag_refs.fasta
+trimal -automated1 -in 24.06.24_aln_gag_refs.fasta -out 24.06.24_trm_gag_refs.fasta -keepheader 
+aliview 24.06.24_trm_gag_refs.fasta
+mkdir 24.06.24_arv_gag_refs
+mv 24.06.24_trm_gag_refs.fasta 24.06.24_arv_gag_refs/24.06.24_arv_gag_refs.fasta
+aliview 24.06.24_arv_gag_refs/24.06.24_arv_gag_refs.fasta
+iqtree -s 24.06.24_arv_gag_refs/24.06.24_arv_gag_refs.fasta -m TEST -bb 1000 -alrt 1000 -T AUTO
+
+
+* Árvore pol
+
+
+cat 24.04.12_aln_felis_pol.fasta refs_retro.fasta > 24.06.24_ori_pol_refs.fasta
+mafft --auto 24.06.24_ori_pol_refs.fasta > 24.06.24_aln_pol_refs.fasta
+trimal -automated1 -in 24.06.24_aln_pol_refs.fasta -out 24.06.24_trm_pol_refs.fasta -keepheader 
+aliview 24.06.24_trm_pol_refs.fasta
+mkdir 24.06.24_arv_pol_refs
+mv 24.06.24_trm_pol_refs.fasta 24.06.24_arv_pol_refs/24.06.24_arv_pol_refs.fasta
+iqtree -s 24.06.24_arv_pol_refs/24.06.24_arv_pol_refs.fasta -m TEST -bb 1000 -alrt 1000 -T AUTO
+
+
+* Árvore env
+
+
+cat 24.04.12_aln_felis_env.fasta refs_retro.fasta > 24.06.24_ori_env_refs.fasta
+mafft --auto 24.06.24_ori_env_refs.fasta > 24.06.24_aln_env_refs.fasta
+trimal -automated1 -in 24.06.24_aln_env_refs.fasta -out 24.06.24_trm_env_refs.fasta -keepheader 
+aliview 24.06.24_trm_env_refs.fasta
+mkdir 24.06.24_arv_env_refs
+mv 24.06.24_trm_env_refs.fasta 24.06.24_arv_env_refs/24.06.24_arv_env_refs.fasta
+iqtree -s 24.06.24_arv_env_refs/24.06.24_arv_env_refs.fasta -m TEST -bb 1000 -alrt 1000 -T AUTO
+
+
+* Árvore concatenada (gag + pol + env)
+   * Antes de fazer a árvore, preciso renomear as sequências para usar o concatenador do Filipe. Repetir esse processo com o arquivo trimado dos três genes.
+      * Encontrar: .
+      * Substituir: _
+      * Encontrar: _-_.+\n
+      * Substituir: \n
+
+
+perl tax_density.pl lista_fastas.txt
+less tax_density.txt
+perl concatenador_noob.pl lista_fastas.txt tax_density.txt
+mkdir 24.06.24_arv_gpe_refs
+mv concat.fasta 24.06.24_arv_gpe_refs/24.06.24_arv_gpe_refs.fasta
+iqtree -s 24.06.24_arv_gpe_refs/24.06.24_arv_gpe_refs.fasta -m TEST -bb 1000 -alrt 1000 -T AUTO
+
+
+* Árvore concatenada (gag+env)
+mkdir 24.06.24_arv_gaen_refs
+perl tax_density.pl ./24.06.24_arv_gaen_refs/lista_fastas.txt
+less tax_density.txt
+perl concatenador_noob.pl lista_fastas.txt tax_density.txt
+mv concat.fasta 24.06.24_arv_gaen_refs/24.06.24_arv_gaen_refs.fasta
+iqtree -s 24.06.24_arv_gaen_refs/24.06.24_arv_gaen_refs.fasta -m TEST -bb 1000 -alrt 1000 -T AUTO
+
+
+Anotações das árvores:
+* Vou usar regex para modificar os arquivos a partir dos alinhamentos utilizados nas árvores:
+   * Árvore completa
+      * Para tirar sequencias:
+         * Encontrar: ^(\w|-).+\n
+         * Substituir: 
+      * Para criar colunas:
+         * Encontrar: ^>(.+_\w+_((F\w\w)_?.+))\n
+         * Substituir: \1\t\2\t\3\n
+   * Árvore gag
+      * Encontrar: ^(.+_(\w\w\w\w\d?)_((F\w\w)_?.+)__.+)\n
+      * Substituir: \1\t\3\t\4\t\2\n
+Escrita
+* Vou começar a adaptar o artigo que usei pra minha dissertação. Vou olhar também os comentarios que os membros da banca fizeram.
+Testes Estatísticos
+* Realizei testes chi-quadrado par-a-par entre as frequências totais de cada gene ou peptídeo com correção de bonferroni usando o pacote “rstatix”. Fiz testes separados entre genes e entre peptídeos, já que não são equivalentes.
+* O comando que usei está no script “Variavel Categorixa x Categorica”.
+* Resultados estatisticamente significativos:
+group1
+	group2
+	p.adj
+	p.adj.signif
+	Gag
+	Pol
+	0.0153
+	*
+	Pol
+	Env
+	0.00891
+	**
+	Gag_polyprotein_Pr65_gag
+	virion_core_structural_peptide_p12
+	0.000516
+	***
+	Gag_polyprotein_Pr65_gag
+	Matrix
+	1.87E-05
+	****
+	Gag_polyprotein_Pr65_gag
+	Protease_PR
+	1.87E-06
+	****
+	Gag_polyprotein_Pr65_gag
+	Reverse_transcriptase_RT
+	6.70E-13
+	****
+	virion_core_structural_peptide_p12
+	Reverse_transcriptase_RT
+	0.00293
+	**
+	virion_core_structural_peptide_p12
+	gp70_protein_SU
+	0.000113
+	***
+	virion_core_structural_peptide_p12
+	p15E_protein_TM
+	0.000355
+	***
+	Capsid
+	Matrix
+	0.00704
+	**
+	Capsid
+	Protease_PR
+	0.00103
+	**
+	Capsid
+	Reverse_transcriptase_RT
+	1.30E-09
+	****
+	Matrix
+	Nucleocapsid
+	0.0438
+	*
+	Matrix
+	Reverse_transcriptase_RT
+	0.0358
+	*
+	Matrix
+	Endonuclease.integrase_IN
+	0.00483
+	**
+	Matrix
+	gp70_protein_SU
+	3.54E-06
+	****
+	Matrix
+	p15E_protein_TM
+	1.24E-05
+	****
+	Nucleocapsid
+	Protease_PR
+	0.00744
+	**
+	Nucleocapsid
+	Reverse_transcriptase_RT
+	1.62E-08
+	****
+	Pol_gene_polyprotein
+	Reverse_transcriptase_RT
+	4.19E-06
+	****
+	Protease_PR
+	Endonuclease.integrase_IN
+	0.000684
+	***
+	Protease_PR
+	gp70_protein_SU
+	3.25E-07
+	****
+	Protease_PR
+	p15E_protein_TM
+	1.21E-06
+	****
+	Reverse_transcriptase_RT
+	Endonuclease.integrase_IN
+	7.84E-10
+	****
+	
+
+Localização Cromossômica
+* André me pediu para refazer aquela imagem com a localização de cada cópia nos cromossomos dos hospedeiros. Estou trabalhando na pasta Localização Cromossômica
+* Estou cruzando os dados dos códigos de acesso com os cromossomos no GenBank de Felis
+* Estou usando regex para adaptar os arquivos para o formato do pacote Chromomap
+* Já fiz os arquivos de cromossomos, que são os mais fáceis.
+* Perspectivas enFeLV selvagens
+* Árvore Felidae
+* Árvore filogenética
+* Distância inter-LTRs
+* Stop codons
+* Imagem conjugada
+
+
+* André falou pra focar nas análises que eu sei, formular uma imagem conjugada, e só depois seguir para análises novas.
+* Matrizes de similaridade
+* Relógio molecular
+   * https://beast.community/time_dependent_rate_model
+      * Seguir esse tutorial pra entender como usar esse modelo.
+      * Filipe também sugeriu uma estratégia de filtragem dos dados, considerando as copias de Fca9.2 que estão hipermutadas. 
+* Recombinação (RDP4)
+   * RDP5 Instruction Manual 
+* Análise de seleção
+   * dN/dS
+   * Outro?
+   * Como se analisa a diversidade intra-hospedeiro de HIV, por exemplo? Ou então seleção a nível de população? Posso comparar diferentes cópias de enFeLV como se fossem diferentes indivíduos de uma população.
+* https://www.jstage.jst.go.jp/article/ggs/85/6/85_6_359/_html/-char/en
+* https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-03068-8
+* https://www.ncbi.nlm.nih.gov/books/NBK2379/
+* Análise de hipermutação
+* Atuação de APOBECs
+* Checar recursos voltados para HIV
+
+
+________________
+
+
+2022/23 - Dissertação
+Neste documento vou documentar as origens dos dados que usarei, assim como minha linha de raciocínio para tomada de decisões.
+Escolha de genomas
+1. Bancos de dados
+Vasculhei os bancos de dados RefSeq, Ensembl e Vertebrategenomeproject em busca de todas as espécies de felinos com genomas disponíveis. Após comparar os três bancos de dados, percebi que o RefSeq era o mais abrangente, contendo todas as espécies encontradas nos outros, assim como outras que não foram encontradas neles. Por isso, retirarei todos os genomas do RefSeq.
+2. Genomas escolhidos
+Primeiramente selecionei todos os genomas disponíveis dentro da família Felidae e separei-os por gênero. Meu objetivo aqui é ter uma amostra do maior número de gêneros possível para a análise de Gamma endógeno em felinos. Para a análise de enFeLV o objetivo é similar, mas quero a maior amostra de Felis e ao menos um representante do gênero mais próximo, Prionailurus. 
+* Quando precisei escolher um genoma entre mais de uma opção (por haver mais de um genoma disponível do mesmo gênero), escolhi aquele com maior N50.
+
+
+Para baixar os genomas, quero os genomas não mascarados. Para isso, pesquisei a melhor forma de fazer isso e encontrei esse link: Genomes Download FAQ, do próprio NCBI. Seguindo suas instruções, eu parti da página da Assembly de cada genoma e:
+* No menu à direita, sob o título Access the Data, selecionei a opção “FTP directory for GenBank assembly”. Mesmo quando houvesse a opção de selecionar “RefSeq assembly”, eu preferi a assembly do Genbank pois ela inclui dados de scaffolds não posicionados e exclui o genoma mitocondrial.
+* Dentro do FTP directory, eu selecionei o arquivo com final “genomic.fna.gz”, pois esses arquivos contém as sequências em formato .FASTA.
+
+
+Os genomas selecionados foram os seguintes:
+* Gênero Felis:
+   * F. catus
+   * F. chaus
+   * F. nigripes
+* Prionailurus viverrinus
+* Acinonyx_jubatus
+* Caracal caracal
+* Leopardus geoffrey
+* Panthera leo
+* Lynx canadensis
+* Puma concolor
+*  Herpailurus yagouaroundi 
+
+Como eu preciso de acesso local ao genoma para poder realizar as buscas por BLAST local, vou baixá-los no laptop, que eu levo pro laboratório e posso continuar as análises lá, quando necessário.
+* Além disso, baixei os genomas no EITA, para fazer as análises aqui.
+BLAST Local
+Com os genomas escolhidos, o próximo passo é aprender a realizar BLAST localmente. Esse é o modo ideal de realizar a busca pois é mais personalizável, e, portanto, me permite mais controle do processo. Vou seguir o passo a passo desse site: Running command-line BLAST — angus 6.0 docummakeblastdb -in “fasta dos genomas” -dbtype nucl -out “arquivo do db”entation
+
+
+Criei um arquivo com todos os genomas completos (+8000 nt) de enFeLV pra usar como query. Os genomas utilizados são:
+* https://www.ncbi.nlm.nih.gov/nuccore/LC196055.1
+* https://www.ncbi.nlm.nih.gov/nuccore/LC196054.1
+* https://www.ncbi.nlm.nih.gov/nuccore/LC196053.1
+* https://www.ncbi.nlm.nih.gov/nuccore/AY364319.1
+* https://www.ncbi.nlm.nih.gov/nuccore/AY364318.1
+
+
+Vou tentar separar todos os genes e o genoma completo em arquivos separados. Como são poucos arquivos, posso fazer na mão, mas talvez seja melhor fazer no perl.
+
+
+Para melhor customização do comando do BLAST local, encontrei esse manual: https://www.ncbi.nlm.nih.gov/books/NBK279690/pdf/Bookshelf_NBK279690.pdf
+* Vou parar pra dar uma lida nele antes de rodar o comando do BLAST. Talvez seja melhor testá-lo com o output no default
+* Como criar bancos de dados:
+   * makeblastdb -in “fasta dos genomas” -dbtype nucl -out “arquivo do db”
+   * O fasta deve ser único, então caso seja necessário, é possivel concatenar mais de um arquivo fasta com o seguinte comando:
+   * cat arquivo1.fasta arquivo2.fasta arquivo3.fasta > arquivofinal.fasta
+Para rodar todos os genomas de uma vez, como uma única base de dados, será necessário juntar todos os arquivos em um .fasta só. Para isso, vou usar o meu computador, que tem espaço o suficiente.
+* No fim, o meu computador também não funcionou pois está com problemas. Usei o computador do lab que eu divido com a Fran. Preciso no futuro só aprender a realizar o comando com linux/wsl, ao invés de windows
+
+
+Com a base de dados feita, pude partir para realizar a busca por BLAST: o comando que usarei, a princípio, será:
+* blastn -db db_felis_prio.fna -query query_enfelv_completos.txt -out results_completo_felis_prio_enfelv.txt
+* Agora preciso refinar esse comando para que me dê uma tabela .tsv e selecione os resultados pela identidade e cobertura.
+* Comando final:
+   * blastn -db “arquivo da db” -query “arquivo do query” -out “arquivo de saída formato .tsv” -outfmt "7 std qcovs sseq"  -perc_identity 60 -qcov_hsp_perc 70
+      * Dentro de -outfmt, 7 significa que o formato do arquivo de saída será uma tabela .tsv, std significa que todos os dados padrão serão adicionados a essa tabela, além da cobertura das sequências (qcovs) e a sequência do match encontrado no subject (sseq).
+      * -perc_identity é um modificador que limitará os resultados para aqueles com uma identidade maior que 60%
+      * -qcov_hsp_perc por sua vez limita os resultados pela cobertura. Nesse caso, limitei por 70%
+         * Reduzir a cobertura para 60% e a identidade para 50% não mudou os resultados.q1
+   * Após selecionar os resultados dessa forma, é possível realizar uma nova busca por BLAST com uma pequena modificação no comando:
+      * blastn -db “arquivo da db” -query “arquivo do query” -out “arquivo de saída formato .txt” -outfmt "6 qseqid sseqid sstart send sseq"  -perc_identity 60 -qcov_hsp_perc 70
+      * Dessa forma, eu terei um arquivo texto no qual cada linha consta o acesso do query, o acesso onde foi encontrado, o início e o fim do alinhamento (para permitir mais de um match com o mesmo query e subject) e o match e a sequência que alinhou. A partir daí, é possível formatar o arquivo para o formato .FASTA através de regex: 
+         * ^(.+?)\t(.+?)\t(.+?)\t(.+?)\t(\w+?)\n. 
+      * A substituição será feita por: >\1_\2_\3_\4\n\5\n
+
+
+Como eu tenho cinco sequências de query, todas elas tem match com o mesmo subject em todos os casos, posso fazer a limpeza dessas repetições manualmente, ou só assumir que as sequências são similares o suficiente e voltar a usar um subject único.
+
+
+Agora que o BLAST local está resolvido, vou partir para preparar as referências:
+
+
+* Refiz o BLAST local, usando apenas um query, ao invés de 5. Vou olhar a tabela dos resultados para selecionar o melhor query.
+   * Todos são muito similares entre si. 
+   * Eliminei os três genomas do artigo japonês, pois como não consegui acesso à referência, eles perdem parte do seu valor. 
+   * Entre os dois genomas que sobraram, selecionei aquele que teve um bitscore médio maior com os resultados que encontrei na primeira busca.
+      * AY364319.1 Felis catus chromosome A2 endogenous virus endogenous feline leukemia virus enFeLV-GGAG, complete sequence
+
+
+BLAST local:
+* Usei o novo arquivo somente com um query.
+* Usei o mesmo banco de dados
+* Usei o mesmo comando:
+   * blastn -db “arquivo da db” -query “arquivo do query” -out “arquivo de saída formato .txt” -outfmt "6 qseqid sseqid sstart send sseq"  -perc_identity 60 -qcov_hsp_perc 70
+* Peguei o arquivo de saída e modifiquei com o notepad++, usando a seguinte fórmula:
+   * Encontrar: ^>(.+?)\t(\d+?)\t(\d+?)\t(.+?\n)
+   * Substituir: >\1_\2-\3\n\4
+* Agora, copiei e colei as referências no arquivo e salvei separadamente: 22_07_18_aln_felisprio_enfelv_referencias
+* Todo o processo que estou fazendo hoje está sendo salvo na pasta com o dia de hoje, no computador do lab.
+Tentativa 2 - Refino de Parâmetros
+* Tentei relaxar os parâmetros do BLAST. Mantendo a cobertura, não foi encontrado nenhum novo resultado. Reduzindo a cobertura a 30%, foi possível recobrar alguns resultados novos, mas como seus comprimentos são menores do que o genoma completo, sua utilidade se torna limitada. Mesmo assim, foi possível confirmar que apenas o comprimento do alinhamento é um parâmetro suficiente, mas que pode ser corroborado pela identidade.
+* Comecei a reformular as referências que utilizei para o alinhamento e árvore. Agora, vou separar através da anotação do genbank previamente quando possível. Já comecei a separar todos os genes, através de uma busca com os números de acesso no arquivo “acesso_referências.txt”. Seguindo essa ordem, já adicionei todos os genes + LTR de 10 referências, faltam 25, começando pela sequência “Felis catus chromosome A2 endogenous virus endogenous feline leukemia virus enFeLV-GGAG, complete sequence”.
+   * Fiz o resto da seleção em casa e deixei os arquivos no drive, dentro da pasta “Referência”.
+
+
+BLAST Local
+* Usando a mesma sequência como query, mas subdividida a partir da anotação do NCBI.
+* Modifiquei os parâmetros de busca: blastn -db db_felis_prio.fna -query “arquivo do query” -out “arquivo de saída formato .txt” -outfmt "6 qseqid sseqid sstart send sseq"  -qcov_hsp_perc 50
+   * Para modificar os arquivos pro formato FASTA: 
+      * Encontrar: ^.+?\t(.+)\t(\d+)\t(\d+)\t(.+)
+      * Substituir: >\1_\2_\3\n\4
+Análises Filogenéticas
+* Usei as referências que eu já tinha salvo e preparado, pelo menos para as análises iniciais.
+Alinhamento
+* Comando do mafft: mafft –auto 22_07_18_ori_felisprio_enfelv_referencias.fasta > 22_07_18_aln_felisprio_enfelv_referencias.fasta
+* Comando do trimal: trimal -automated1 -in 22_07_18_aln_felisprio_enfelv_referencias.fasta -out 22_07_18_trm_felisprio_enfelv_referencias.fasta
+   * Após rodar o trimal, analisei visualmente o alinhamento. Removi todas as sequências que ficaram com um alinhamento de menos de 4500 pb.
+      * Como regra, cortei todas as sequências com menos de 60% das posições informativas.
+         * 3LTR: 262
+         * env: 921
+         * gag: 621
+         * pol: 1708
+         * A partir de agora vou fazer as análises de trimal com dois parâmetros extras:
+            * -resoverlap é uma medida de qualidade que posso definir, ela mede quantas vezes a mesma informação (gap ou nucleotídeo) foi encontrada em diferentes sequências do mesmo alinhamento.
+            * -seqoverlap mede a porcentagem de posições da mesma sequência que passaram da medida resoverlap. Sequências que não alcançarem esse padrão são removidas.
+            * No exemplo dado pelo manual (manual TrimAl), eles usaram essas duas opções com valor de 0.75, mas talvez eu desça para 0.6 ou 0.5.
+   * Um dos resultados, CM034425.1_15210842-15203787, quase foi cortado, pois havia apenas 4742 pb sem contar gaps. Observar seu posicionamento na árvore final.
+   * Foram removidas as seguintes sequências:
+      * NC_001500.1_SFFV_XRV_Gamma
+      * AB674448.1_ERV-DC19_ERV
+      * AB674451.1_ERV-DC16_ERV
+      * AB674449.1_ERV-DC2_ERV
+      * AB674450.1_ERV-DC6_ERV
+      * AB674452.1_ERV-DC2_ERV
+* O mesmo processo foi repetido para cada um dos genes + 3’ LTR.
+   * No caso desse primeiro alinhamento, usei as referências de genoma completo e deixei o mafft encontrar a região alinhada correta. Após analisar os resultados vou confirmar com a Lili se ela acha melhor refazer isso ou não.
+Árvore
+* Por fim, iqtree: 
+   * iqtree -s 22_07_18_trm_felisprio_enfelv_referencias.fasta -m TEST -bb 1000 -alrt 1000
+* Foram feitas árvores iniciais para os genomas completos, assim como para cada gene e a LTR 3’. 
+   * Depois de analisar os resultados dessas árvores, vou repensar meus parâmetros e refazer as buscas.
+      * Relaxar os parâmetros da busca: apenas cobertura 70%, sem identidade
+      * Adicionar -resoverlap e -seqoverlap no trimal: 0.5 nos dois.
+      * Remontar os datasets de referência: selecionar no genbank pelo gene, ao invés de deixar o MAFFT selecionar a região.
+Alinhamento - tentativa 2
+* Comando do MAFFT: mafft –auto 22_07_20_rfr_”região”_enfelv.fasta > 22_07_20_aln_”região”_enfelv.fasta
+* trimal -automated1 -in 22_07_20_aln_”região”_enfelv.fasta -out 22_07_20_trm_”região”_enfelv.fasta
+   * Após o trimal, selecionei manualmente sequências com menos de 50% de posições com nucleotídeos.
+      * gag: 849
+      * pol: 1522
+      * env: 999
+      * 3LTR: 214
+* iqtree -s 22_07_20_arv_”região”_enfelv.fasta -m TEST -bb 1000 -alrt 1000
+   * Os resultados foram separados previamente em pastas e a árvore foi feita a partir de uma cópia do arquivo trimado feito nessa pasta
+
+
+Agora que todas as árvores estão prontas, até eu conversar com a Lili eu vou escrevendo o texto do artigo.
+
+
+Finalização dos genomas completos
+* Para conseguir completar as cópias de genoma completo de início a fim, peguei os resultados do BLAST a partir do genoma completo de enFeLV, como um teste inicial.
+   * Voltei ao NCBI e manualmente extraí as sequências a partir dos cromossomos de origem, com um adicional de 5kb para cada lado.
+   * Quero fazer o mesmo processo com os resultados parciais, mas isso vai dar mais trabalho, quero achar um jeito automatizado
+* Agora, vou usar o FASTA produzido com essas sequências e fazer uma nova base de dados a partir dele:
+   * makeblastdb -in “fasta dos genomas” -dbtype nucl -out “arquivo do db”
+* Agora farei um BLAST a partir das LTRs:
+   * Query: arquivo com fasta de cada LTR do enFeLV AY364319.1, que eu já vinha usando como query.
+   * blastn -db 22_07_25_felisprio_completos_expandidos.txt -query query_enfelv_LTRs.txt -out 22_08_11_blt_LTRs -outfmt "6 qseqid sseqid sstart send sseq"  -qcov_hsp_perc 50
+   * Percebi que os resultados das duas LTRs estão perfeitamente espelhados. Com isso, vou usar apenas os resultados da LTR 3’
+* Com isso, tenho um arquivo original com ambas as LTRs de todas as cópias de genoma completo de enFeLV. Para extrair a sequência completa, é só voltar no arquivo que usei para gerar a base de dados e pegar a sequência entre as posições das LTRs.
+   * Fiz isso. Indo 4 pares de base a upstream da LTR 5’ e downstream da LTR 3’ consegui encontrar também as repetições do genoma do hospedeiro que marcam inserções individuais.
+   * Consegui, inclusive, identificar a mesma inserção nos genomas de ambos os animais.
+* Quero repetir esse mesmo processo para todas as cópias, inclusive as que não estão completas. Para isso, vou tentar automatizar o processo.
+   * https://www.biostars.org/p/1422/
+      * https://diegomariano.com/introducao-ao-bioperl-2/
+   * https://code.google.com/archive/p/atgc-tools/wikis/sequence_subgroup_extractor.wiki
+   * https://www.biostars.org/p/10469/
+   * https://stackoverflow.com/questions/16553004/extracting-fasta-sequences-based-on-position
+   * https://github.com/4ureliek/Fasta
+
+
+* Hoje (01/09) fiz um script com o Matheus para cortar os genomas completos nas partes que eu queria. As partes foram separadas no arquivo enfelv8k.fas
+   * Para fazer esse script, primeiro fiz uma tabela com todos os resultados de BLAST para os genes: 22_08_19_iniciofim_acessos
+      * Coluna 1: numeros de acesso
+      * Coluna 2: primeiro nt do hit -8000
+      * Coluna 3: ultimo nt do hit +8000
+      * OBS: tentei primeiro com 5k, mas alguns resultados de env e gag não foram longos o suficientes para encontrar as duas pontas.
+      * Depois de juntar os resultados de todos os genes na mesma tabela, eu ainda fiz uma curadoria visual, excluindo linhas que fossem redundantes (resultados de mais de um gene da mesma cópia de enFeLV)
+   * Depois, junto do Matheus fizemos um script do r: extract_seq.r
+      * Ele pega os genomas completos, lê as linhas de acordo com os números de acesso, dá match entre os números de acesso do arquivo dos genomas e da tabela e extrai a região pedida do genoma.
+   * Então, usei esse resultado para fazer uma base de dados no blast
+      * makeblastdb -in enfelv8k.fas -dbtype -nucl
+   * Fiz uma busca no blast com o arquivo da LTR do meu query:
+      * blastn -db enfelv8k.fas -query query_enfelv_LTRs.txt -outfmt "6 sseqid sstart send" -out "22_09_01_blt_completar_genomas_genes.tsv" -qcov_hsp_perc 50
+      * Obtive um total de 31 resultados (o que seria equivalente a 15 enFeLVs).
+         * OBS: o segmento “CM031418.1_45567206_45584708” apresentou resultado para três LTRs. Prestar atenção nos resultados posteriores o que isso poderia significar.
+      * Agora preciso apenas formatar esses resultados para voltar ao script do r e adaptá-lo para esse novo uso.
+      * Ao fim desse processo, encontrei apenas 15 cópias de enFeLV, 3 a mais que na busca pelo genoma completo.
+         * Comparar depois que resultados a mais foram encontrados.
+Datação da Inserção
+* O próximo passo é analisar os resultados e formatá-los para FASTA:
+   * Encontrar: ^AY364319\.1_enFeLV-GGAG_(\dLTR)\t(.+)\t(\d+)\t(\d+)\t(.+)
+   * Substituir: >\1_\2_\3_\4\n\5
+   * Percebi que os resultados das duas LTRs estão perfeitamente espelhados. Com isso, vou usar apenas os resultados da LTR 3’
+Agora, com os resultados em mãos, o próximo passo é redescobrir como fazer datação a partir de mutações em LTR.
+* Artigo: Vitte et al. 2003.
+* “Nucleotide Divergence Rate” - usou software PAUP. Procurar por opções mais modernas.
+* Posso olhar artigos que referenciaram San-Miguel et al. 1998, pois é o primeiro artigo a usar esse método para datação de inserções.
+   * Simoni et. al, 2022: distmat tool - EMBOSS
+      * Partiram da taxa de mutação de genes do organismo e dobraram o valor, considerando que retrotransposons têm taxa de mutação mais alta.
+      * Não há a conta usada para transformar distância em datação.
+      * Mais um método de datação através de sequenciamento Illumina
+   * LTR_retriever: A Highly Accurate and Sensitive Program for Identification of Long Terminal Repeat Retrotransposons - PMC
+      * Ferramenta de busca de LTRs. Pode valer a pena pesquisar como um substituto ao BLAST
+      * LTRharvest, an efficient and flexible software for de novo detection of LTR retrotransposons - uma outra possibilidade um pouco mais antiga, pode ser redundante.
+      * Não consegui encontrar onde explicam o método de cálculo de distância.
+   * Genome Size Variation and Evolution Driven by Transposable Elements in the Genus Oryza 
+      * MEGA 11 para matriz
+         * Mean Pairwise Distance
+         * Kimura two-parameter
+      * Mutações: substitutions per synonymous site per year
+      * Depois, baseado na matriz: t = d/2r, where the rate (r) of neutral evolution of 1.3 × 10–8 substitutions per site per year was used
+   * Rapid and Recent Evolution of LTR Retrotransposons Drives Rice Genome Evolution During the Speciation of AA-Genome Oryza Species - PMC 
+      * “baseml module implemented in PAML” para calcular matriz de distância.
+      * T = K/2r, where T = insertion time, r = synonymous mutations/site/MY, and K = the divergence between the two LTRs. A substitution rate of 1.3 × 10−8 per site per year was used to calculate insertion times.
+   * Analyses of LTR-Retrotransposon Structures Reveal Recent and Rapid Genomic DNA Loss in Rice - PMC
+      * Usaram MEGA para calcular as distâncias.
+         * Kimura two-parameter
+         * Complete Deletion option
+      * Cálculo de sempre depois. 
+* Como referência para a taxa de mutação de gatos domésticos, posso usar esse artigo: De novo mutations in domestic cat are consistent with an effect of reproductive longevity on both the rate and spectrum of mutations
+   * Eles encontraram uma taxa de mutação para gatos domésticos de “0.86 × 10-8 per bp per generation” com uma geração de duração de 3,8 anos
+   * taxa de 2.3 × 10-9 por ano
+Cálculo de Distâncias:
+Opções usadas:
+  
+
+
+
+* A2_112180278: 
+* B2_3157778: 
+* B2_29972771:
+* B2_50441685:
+* B3_23508138: 0,00893 / 4.6 × 10-9 = 1.941.304 anos
+* B4_1810446: 
+* B4_83099800: 0,00362 / 4.6 × 10-9 = 786.956 anos
+* C1_39855085: 
+* D2_15198787: 
+* D2_69345703: 
+* D4_14535912: 0,00182 / 4.6 × 10-9 = 395.652 anos
+* Y_120517: 
+
+
+Vou procurar agora um outro modelo de substituição que inclua gaps na conta. 
+* Checar no genoma de FeLV exógeno se o poli-A presente na LTR do endógeno também existe lá.
+
+
+Artigo: ROCA, A. L., PECON-SLATTERY, J., O’BRIEN, S. J. "Genomically Intact Endogenous Feline Leukemia Viruses of Recent Origin", Journal of Virology, v. 78, n. 8, p. 4370–4375, 15 abr. 2004. DOI: 10.1128/jvi.78.8.4370-4375.2004. Disponível em: https://journals.asm.org/journal/jvi. Acesso em: 11 jun. 2021.
+* Posso nomear as cópias de enFeLV pela repetição de 4 kb, assim como o artigo da sequências que estou usando de referência.
+* Posso olhar as ORFs dos enFeLVs completos, e tentar entender através das mutações o que as fez perder a capacidade de se replicar.
+* Aparentemente as LTRs de diferentes enFeLVs se dividem em dois grupos. Posso tentar diferenciar esses dois grupos.
+* Outras taxas de substituição foram usadas:
+   * The substitution rate for endogenous LTRs in humans, apes, and Old World monkeys has been estimated to be 2.28 to 5.00 substitutions per site per 109 years
+   * If we consider a divergence rate estimate for noncoding regions of the domestic cat genome of 1.2% per 106 years
+   * Qual mutation rate eu uso?
+
+
+Fiz uma matriz através do PAUP*, usando o modelo GTR: 22_08_15_dst_LTR_todos
+* A2_112180278: 0
+* B2_3157778: 0
+* B2_29972771: 0
+* B2_50441685: 0
+* F. chaus: B3_23508138: 0,00900662 / 4.6 × 10-9 = 1.957.961 anos
+* B4_1810446: 0
+* F. catus: B4_83099800: 0,00365277 / 4.6 × 10-9 = 794.080 anos
+* C1_39855085: 0
+* D2_15198787: 0
+* D2_69345703: 0
+* F. catus: D4_14535912: 0,00181827 / 4.6 × 10-9 = 395.276 anos
+* Y_120517: 0
+
+
+* Ainda assim os gaps não foram usados na quantificação da distância. Talvez seja melhor só desistir e partir pra outro método.
+   * Vou deixar esse problema para depois e ao invés disso partir para outros problemas.
+   * Como o artigo que encontrou cópias inteiras de enFeLV fez esse cálculo na mão, talvez seja melhor arrumar outro método.
+
+
+Vou repetir o mesmo processo para os resultados encontrados com os genes individuais:
+* Alinhamento pelo MAFFT: mafft –auto “arquivo com ambas as LTRs” > “arquivo alinhado.fas”
+* Depois, concatenei todos esses arquivos na linha de comando com o comando: cat *.fas > 22_09_01_aln_LTR_todos.fasta
+* Então, fui para o aliview, onde eu ressalvei o arquivo no formato .nex, e usei a função de adicionar gaps ao final das sequências, para simular como se todas estivessem alinhadas entre si.
+* Agora, vou usar o PAUP*: 
+   * No terminal do windows: paup
+   * dset distance=GTR
+   * SaveDist format=tabText file=22_09_01_dst_LTR_genes.txt
+* Salvei o arquivo de saída no google drive e adicionei na coluna AH a fórmula para cálculo da distância: 22_09_01_dst_LTR_genes
+   * Apenas duas sequências apresentaram distância maior que 0.
+      * CM034429.1_98681887: 0.00891448 / 4.6 × 10-9 = 1.937.930 anos
+      * CM034424.1_122319445 :0.00175435 / 4.6 × 10-9 = 381.380 anos
+Posição de enFeLV no genoma
+* Ferramentas para visualização da posição de enFeLV nos genomas:
+   * BLAST
+      * Dá pra ver genes flanqueando, etc
+   * Tablet
+   * IVG
+* Anotação do genoma:
+   * Felis catus está anotado e tem a visualização pelo próprio  BLAST, mas Felis chaus não. Vou testar pelo Geneious como fazer isso.
+* No fim das contas, vou usar um pacote de R chamado ChromoMap: chromoMap v0.4.1 Documentation (R package)
+   * Já fiz o documento para o genoma de gato doméstico. Falta só encontrar a posição do centrômero: chromosomes.txt        
+      * Desisti de encontrar o centrômero. Seria interessante, mas não essencial. Como está difícil, vou deixar para depois caso seja pedido.
+   * Agora preciso fazer o documento com as regiões anotadas. Para isso, preciso decidir o nome final das cópias. Voltarei pra completar os genomas por enquanto.
+
+
+OBS: posso usar a feature de poliploidia pra mostrar o genoma dos dois bichos separadamente.
+
+
+* Vou preparar um arquivo novo de anotação, com exatamente o início e fim de cada cópia no genoma. Para isso, primeiro fiz dois BLAST locais:
+   *  blastn -db .\22_09_02\db_Fca_9.0.fna -query '.\Completar Genomas\22_09_05_fim_enFeLV_finalizados.nomeados_todos_nredundante.fasta' -outfmt "6 qseqid sseqid sstart send" -perc_identity 100 -qcov_hsp_perc 100 -out 22_09_08_pos_enfelv_final.txt
+   *  blastn -db .\db_felis_prio.fna -query '.\Completar Genomas\22_09_05_fim_enFeLV_finalizados.nomeados_todos_nredundante.fasta' -outfmt "6 qseqid sseqid sstart send" -perc_identity 100 -qcov_hsp_perc 100 -out 22_09_08_pos_enfelv_final.txt
+* Em seguida, fiz um regex para preparar o arquivo para o formato de anotação do ChromoMap:
+   * encontrar: ^.+?_(\w+)_(.+?)_enfelv.(\w\w\w\w)(?:_RC)?\t.+?\t(\d+)\t(\d+)
+   * substituir: enFeLV-\3\t\2\t\4\t\5\t\1\t
+
+
+Após definir o primeiro e último nucleotídeo de cada cópia de enFeLV, olhei o Genome Data Viewer, buscando que regiões genômicas podem ser encontradas nos arredores das cópias:
+* enFeLV-GGAG (Fca126): 
+   * ADARB2: This gene encodes a member of the double-stranded RNA adenosine deaminase family of RNA-editing enzymes and may play a regulatory role in RNA editing.
+   * protein NYNRIN-like: Tra5; Transposase InsO and inactivated derivatives [Mobilome: prophages, transposons]
+* enFeLV-ACAG (Fca126):
+   * elementos de retrovírus (env e transcriptase reversa)
+* enFeLV-CAAG (Fca126):
+   * GDA: desaminase de guanina
+* enFeLV-CTGT (Fca126):
+   * FLAI-K: saoe class I histocompatibility antigen, A alpha chain-like
+   * LOC105260391 bromodomain-containing protein 4-like
+* enFeLV-ATGG(Fca126):
+   * LOC111560404 MLV-related proviral Env polyprotein-like
+* enFeLV-TGAC (Fca126):
+   * LOC123386859 formin-like protein 7
+* enFeLV-GTAT (Fca9.0):
+   * HMGCLL1 3-hydroxymethyl-3-methylglutaryl-CoA lyase like 1:
+      * Enables hydroxymethylglutaryl-CoA lyase activity. Involved in ketone body biosynthetic process. Located in several cellular components, including cytosol; endoplasmic reticulum; and perinuclear region of cytoplasm.
+* enFeLV-ATAA (Fca9.0):
+   *  LMBR1 domain containing 1
+      * This gene encodes a lysosomal membrane protein that may be involved in the transport and metabolism of cobalamin. This protein also interacts with the large form of the hepatitis delta antigen and may be required for the nucleocytoplasmic shuttling of the hepatitis delta virus. Mutations in this gene are associated with the vitamin B12 metabolism disorder termed, homocystinuria-megaloblastic anemia complementation type F.
+* enFeLV-AGCT (Fca9.0):
+   * STOX1 storkhead box 1
+      * The protein encoded by this gene may function as a DNA binding protein. Mutations in this gene are associated with pre-eclampsia/eclampsia 4 (PEE4). Alternatively spliced transcript variants encoding different isoforms have been found for this gene.
+* enFeLV-GAAA (Fca9.0)
+   * LOC101099449 immunoglobulin lambda-1 light chain-like
+* enFeLV-CTAT (Fca9.0)
+   * ABCA15 ATP binding cassette subfamily A member 15
+* enFeLV-TGTT (Fca9.0)
+   * FMN2 formin 2
+      * This gene is a member of the formin homology protein family. The encoded protein is thought to have essential roles in organization of the actin cytoskeleton and in cell polarity. This protein mediates the formation of an actin mesh that positions the spindle during oogenesis and also regulates the formation of actin filaments in the nucleus. This protein also forms a perinuclear actin/focal-adhesion system that regulates the shape and position of the nucleus during cell migration. Mutations in this gene have been associated with infertility and also with an autosomal recessive form of intellectual disability (MRT47). Alternatively spliced transcript variants have been identified.
+
+
+Obs.: conversando com o André, percebi que também será importante incluir as cópias de LTR solo nas visualizações no genoma. Com esse resultado, poderei quantificar as cópias em machos x fêmeas. Como vou fazer isso?
+* E se eu fizer um blast como query duas cópias de LTR seguidas?
+   * Fiz e parece ter dado certo, encontrando 50 cópias em Fca9.0 e 176 quando considerados Fca126 e Fch.
+   * Olhando melhor, os resultados estão estranhos, quando olho pra posição deles no genoma. Talvez valha a pena olhar melhor os parâmetros usados.
+      * Quando aumenta a cobertura para 60%, ficam 0 resultados.
+      * Talvez seja melhor só voltar para uma LTR como query e depois filtrar os resultados posteriormente.
+   * Realmente não faz sentido esse resultado: múltiplas vezes, eu recebi exatamente a mesma região do genoma como hit duas vezes, provavelmente porque o programa leu ela uma vez para a primeira cópia do query e uma vez para a segunda. O fato de não entregar nenhum resultado quando a busca é feita com 60% de cobertura como parâmetro só reforça que os resultados encontrados não refletem a realidade.
+   * Ao invés de me preocupar com quais cópias tem genes e quais não tem, posso só fazer dois mapas separados: um para cópias com genes e um para todas as LTRs encontradas.
+* Vou fazer uma filogenia para garantir que deu tudo certo.
+   *  mafft --auto 22_09_08_ref_LTRsolo_todos.txt > 22_09_08_aln_LTRsolo_todos.txt
+   * trimal -automated1 -in 22_09_08_aln_LTRsolo_todos.txt -out 22_09_08_trm_LTRsolo_todos.txt
+      * Após o trimal, selecionei manualmente sequências com menos de 50% de posições com nucleotídeos.
+      * Parei por aqui para reanalizar meus métodos. Acho que vou desistir e fazer todas as cópias de LTR mesmo.
+
+
+09/09/2022
+* Continuei trabalhando em encontrar as LTRs. Tentei usar as ferramentas LTRharvest e LTR_retriever, mas falhei em instalar qualquer uma das duas.
+   * Usando o EITA, que já tinha o conda instalado foi possível fazer o LTRharvest funcionar. Ele parece ser a melhor opção para mim, já que ele me permite usar uma LTR como query para que ele procure elementos similares.
+   * Agora vou estudar os comandos para usa-lo.
+LTRharvest
+* Primeiro passo foi criar um novo ambiente no conda com o pacote que eu queria:
+   * conda create -n Ricardo genometools-genometools
+* Agora, para ativar esse ambiente, eu apenas preciso lançar o seguinte comando:
+   * conda activate Ricardo
+* Em seguida, o ltrharvest é usado da seguinte forma:
+   * gt ltrharvest …
+      * “gt” é “genometools”, o pacote onde se encontra essa ferramenta
+      * “ltrharvest” é o nome da ferramenta em si.
+      * Em seguida, tenho que adicionar algumas variáveis para que o comando funcione, que podem ser encontrados nesse manual: LTRharvest a manual 
+         * Pesquisando melhor, estou na dúvida, porque parece que essa ferramenta é usada para encontrar todo tipo de LTR. O input que eles mencionam é simplesmente o fasta do genoma.
+Próximos Passos
+Tendo os resultados em mãos, quero marcar uma nova reunião com o Filipe, o André e a Lili pra poder olhar os resultados e definir estratégias pra finalizar o artigo. Pra isso, preciso:
+1. Pegar região genômica de todos os resultados e fazer db ✅
+   1. Fazer script pra pegar regiões - com o Matheus
+   2. Juntar num fasta
+   3. Rodar makeblastdb
+      1. makeblastdb -in “fasta dos genomas” -dbtype nucl -out “arquivo do db”
+2. Fazer BLAST com LTR para encontrar inicio e fim de cada cópia ✅
+   1. Usar o mesmo query
+   2. comando 1: blastn -db “db” -query query_enfelv_LTRs.txt -out 22_08_11_blt_LTRs -outfmt "6 sseqid sstart send"  -qcov_hsp_perc 50
+      1. Esse comando é usado para completar os genomas (passo 3)
+   3. comando 2: blastn -db “db” -query query_enfelv_LTRs.txt -out 22_08_11_blt_LTRs -outfmt "6 qseqid sseqid sstart send sseq"  -qcov_hsp_perc 50
+      1. Esse, por sua vez, é usado para fazer os FASTAs para datar as inserções (passo 5)
+3. Pegar todos os genomas LTR até LTR (incluindo os 4 nt) ✅
+   1. Voltar nas regiões genômicas (passo 1)
+   2. Usar resultados do BLAST (passo 2) para demarcar início e fim
+   3. Automatizar esse processo: extract_seq_parte2.r 
+4. Mapear cópias nos cromossomos ✅
+   1. Encontrar inicio e fim das cópias (passo 3)
+   2. Formatar para o ChromoMap
+   3. Rodar o ChromoMap no r
+5. Datar as inserções ✅
+   1. Transformar resultado do BLAST (passo 2) em FASTA ✅
+   2. Alinhar com MAFFT
+   3. Fazer matriz de similaridade
+   4. Aplicar fórmula T = K/2r
+Fca9.0
+Após fazer todo esse processo, descobri que o genoma de Felis catus que eu estava usando na verdade era de um híbrido. Agora vou refazer todas as análises com um novo genoma: Fca_9.0.
+1. Baixar genoma: GCA_000181335.5_Felis_catus_9.0_genomic.fna.gz ✅
+2. BLAST local:✅
+   1. Transformar genoma em banco de dados:
+      1. makeblastdb -in db_Fca_9.0.fna -dbtype nucl
+   2. Fazer BLAST para FASTAs:
+      1. blastn -db db_Fca_9.0.fna -query ../query_enfelv_todos.txt -out 22_09_02_blt_fca9.0_todos.txt -outfmt "6 qseqid sseqid sstart send sseq"  -qcov_hsp_perc 50
+         1. Para modificar os arquivos pro formato FASTA: 
+            1. Encontrar: ^.+?\t(.+)\t(\d+)\t(\d+)\t(.+)
+            2. Substituir: >\1_\2_\3\n\4
+3. Fazer análises filogenéticas:✅
+   1. Já tenho as referências. Add no fasta dos resultados
+   2. mafft: 
+      1. mafft --auto 22_09_02_ref_fca9.0_env.fas > 22_09_02_aln_fca9.0_env.fas
+      2. mafft --auto 22_09_02_ref_fca9.0_gag.fas > 22_09_02_aln_fca9.0_gag.fas
+      3. mafft --auto 22_09_02_ref_fca9.0_pol.fas > 22_09_02_aln_fca9.0_pol.fas
+      4. mafft --auto 22_09_02_ref_fca9.0_completo.fas > 22_09_02_aln_fca9.0_completo.fas
+      5. mafft --auto 22_09_02_ref_fca9.0_3LTR.fas > 22_09_02_aln_fca9.0_3LTR.fas
+   3. trimal: 
+      1. trimal -automated1 -in 22_09_02_aln_fca9.0_env.fas -out 22_09_02_trm_fca9.0_env.fas
+      2. trimal -automated1 -in 22_09_02_aln_fca9.0_gag.fas -out 22_09_02_trm_fca9.0_gag.fas
+      3. trimal -automated1 -in 22_09_02_aln_fca9.0_pol.fas -out 22_09_02_trm_fca9.0_pol.fas
+      4. trimal -automated1 -in 22_09_02_aln_fca9.0_completo.fas -out 22_09_02_trm_fca9.0_completo.fas
+      5. trimal -automated1 -in 22_09_02_aln_fca9.0_3LTR.fas -out 22_09_02_trm_fca9.0_3LTR.fas
+   4. Como fiz antes, agora vou cortar todas as sequências que apresentarem mais de 50% de gaps:
+      1. gag: 692 nt
+      2. pol: 1463 nt
+      3. env: 634 nt
+      4. 3LTR: 270 nt
+      5. completo: 2947 nt
+   5. iqtree: 
+      1. iqtree -s 22_09_02_trm_fca9.0_env.fas -m TEST -bb 1000 -alrt 1000 -o NC_001867_1_5974-9651_Walleye_dermal_sarcoma_virus
+      2. iqtree -s 22_09_02_trm_fca9.0_gag.fas -m TEST -bb 1000 -alrt 1000 -o NC_001867_1_800-2548_Walleye_dermal_sarcoma_virus
+      3. iqtree -s 22_09_02_trm_fca9.0_pol.fas -m TEST -bb 1000 -alrt 1000 -o NC_001867_1_2545-6058_Walleye_dermal_sarcoma_virus
+      4. iqtree -s 22_09_02_trm_fca9.0_completo.fas -m TEST -bb 1000 -alrt 1000 -o NC_001867_1_WDSV_XRV_Epsilon
+      5. iqtree -s 22_09_02_trm_fca9.0_3LTR.fas -m TEST -bb 1000 -alrt 1000 -o NC_001867_1_11674-12119_Walleye_dermal_sarcoma_virus
+4. Finalização dos genomas completos:✅
+   1. Pegar região genômica:
+      1. Fazer tabela:
+         1. blastn -db db_Fca_9.0.fna -query ../query_enfelv_todos.txt -out 22_09_02_blt_fca9.0_todos_tabela.txt -outfmt "6 sseqid sstart send"  -qcov_hsp_perc 50
+      2. script do r
+   2. BLAST local das LTRs:
+      1. transformar regiões genômicas em banco de dados:
+         1. makeblastdb -in enfelv_Fca9.0_8k.fas -dbtype nucl
+      2. Pesquisar LTRs:
+         1. blastn -db enfelv_Fca9.0_8k.fas -query query_enfelv_3LTR.txt -outfmt "6 sseqid sstart send" -out "22_09_02_blt_completar_genomas_Fca9.0.tsv" -qcov_hsp_perc 50
+   3. Adaptar resultados do blastn LTR para pegar os genomas certinho
+   4. Voltar ao script do R
+   5. OBS: ao final, com os genomas prontos, terminei por não encontrar automaticamente duas duplas de 4nt: 
+      1. CM001394.3_11530555_11548087_enfelv_TGTT
+      2. CM001392.3_9396180_9412530_enfelv_CCCT
+5. Localização no Genoma: ✅
+   1. Fazer uma nova tabela
+   2. Rodar o script do r
+6. Datar inserções:
+   1. BLAST ou usar resultados anteriores
+
+
+Tentativa 3
+* No sentido de ter uma curadoria melhor dos resultados obtidos com o genoma Fca9.0, vou fazer de novo os BLASTs, pois estou um pouco suspeito dos resultados encontrados.
+   * Decidi fazer esse processo com todos os genomas, que assim eu posso centralizar todo o processo desde o início.
+   * Fiz dois blasts, um pra cada banco de dados (depois vou juntar esses dois bancos em um só).
+   * Em seguida, usei regex para formatar os resultados no formato .tsv com colunas “acesso”, “início”, “fim”.
+   * Passei para o google sheets, onde estou fazendo a expansão da região com 8k a 5’ e 3’.
+      * Além disso, vou fazer uma curadoria manual, removendo todos os resultados parciais encontrados em genes que também foram encontrados através do blast por genoma completo.
+      * Prestando atenção, algumas regiões genômicas foram encontradas em múltiplas corridas, mas ainda assim não foram encontradas na corrida com genoma completo. Prestar atenção nesses resultados.
+   * Feito isso, vou agora rerodar o script do r pra cada uma dessas tabelas.
+      * Resolvido. Arquivos com região de cada segmento estão na pasta Todos_final.
+      * Da próxima vez que eu pegar isso, só preciso rodar um novo BLAST com cada um dos arquivos como db e a LTR 3’ como query.
+* BLASTs locais:
+   * Primeiro passo: fazer bancos de dados
+      * makeblastdb -in 8k_completos/enfelv_completos_8k.fas -dbtype nucl
+      * makeblastdb -in 8k_gag/enfelv_gag_8k.fas -dbtype nucl
+      * makeblastdb -in 8k_pol/enfelv_pol_8k.fas -dbtype nucl
+      * makeblastdb -in 8k_env/enfelv_env_8k.fas -dbtype nucl
+   * Segundo passo: fazer BLASTs
+      * blastn -db 8k_completos/enfelv_completos_8k.fas -query query_enfelv_3LTR.txt -outfmt "6 sseqid sstart send" -out "22_09_12_blt_completos.tsv" -qcov_hsp_perc 50
+         * No resultado da cópia CM001396.4_8823991_8847277 foram encontrados quatro resultados, cortando as LTRs no meio, como se houvesse uma inserção nessa cópia que não está presente no query.
+      * blastn -db 8k_gag/enfelv_gag_8k.fas -query query_enfelv_3LTR.txt -outfmt "6 sseqid sstart send" -out "22_09_12_blt_gag.tsv" -qcov_hsp_perc 50
+         * Mesma coisa que aconteceu com o env. Devem ser as mesmas cópias.
+            * CM001387.3_109666638_109683510
+            * CM001387.3_109670319_109687162
+         * Algo similar, mas em outra região:
+            * CM031418.1_45567206_45584708
+            * CM031418.1_45563211_45580713
+         * Mais uma vez:
+            * CM001384.3_47512698_47530209
+            * CM001384.3_47516866_47534389
+      * blastn -db 8k_pol/enfelv_pol_8k.fas -query query_enfelv_3LTR.txt -outfmt "6 sseqid sstart send" -out "22_09_12_blt_pol.tsv" -qcov_hsp_perc 50
+      * blastn -db 8k_env/enfelv_env_8k.fas -query query_enfelv_3LTR.txt -outfmt "6 sseqid sstart send" -out "22_09_12_blt_env.tsv" -qcov_hsp_perc 50
+         * Foram encontrados três resultados de LTR para as sequências:
+            * CM001387.3_109664843_109682031
+            * CM001387.3_109668538_109685728
+            * São dois resultados no mesmo cromossomo numa região muito próxima. É possível que hajam três cópias, ou então que uma das cópias esteja transbordando para dentro da outra?
+            * Alinhando o resultado da região 11656-11114 da primeira sequência com a segunda, foi alcançado um alinhamento perfeito com a região 7961-7419 (ambos os resultados “do meio”
+            * Alinhei os dois fragmentos de 16k, e há uma diferença de 3kb entre eles. Alinhando cada um dos pares de LTRs encontrados, discerni que os três resultados de ambos os fragmentos representam as mesmas três LTRs. Um par e uma LTR solo. Apesar disso, há dois representantes de env nessa região. O que isso significa??
+               * Pode ser uma duplicação de env
+               * Pode ser uma cópia degradada de enFeLV nova.
+               * Talvez seja interessante alinhar os dois envs.
+
+
+Consegui pegar os genomas completos através do script de R.
+* Agora vou finalizá-los nomeando-os pelo cromossomo e a assinatura genômica.
+   * CM001394.3_11530555_11548087_enfelv dos resultados do gene gag não encontrou homologia entre os primeiros e últimos 4 nt
+      * Talvez tenha havido um erro por causa do blast, checar no contig original se os nucleotídeos seguintes são os que eu quero (porque os dois últimos nucleotídeos extraídos são iguais aos dois primeiros da assinatura 5’).
+      * Mesmo problema foi encontrado no resultado equivalente à mesma região do gene env.
+      * Voltei no contig e confirmei que esse era o caso mesmo, o BLAST não tinha pego os últimos nucleotídeos da LTR e por isso a assinatura não estava completa. Completei as sequências.
+* Além disso, renomeei as sequências de acordo com o organismo e o cromossomo.
+   * Deixei os resultados separados por gene, além de um arquivo não redundante, no qual eu cortei todos os resultados que se repetiam em mais de um gene.
+Pós 19/09/2022
+* Depois disso, é só fazer as análises:
+   * Filogenia
+      * Conversei com a Mi: ela sugeriu fazer o alinhamento de cada gene separadamente, depois concatenar os alinhamentos e fazer a árvore.
+      * Agora preciso só pensar como vou fazer para separar os genes. Provavelmente pelo ORFFinder.
+      * Conversei com a Lili, não vamos fazer essa filogenia, a princípio.
+         * Acho que vou fazer filogenias só com os genes baseado na anotação do Geneious.
+         * Maaas com isso eu vou perder a informação das sequências que não fecharam enfelvs completos. Provavelmente são só as sequências de Felis nigripes.
+            * Acho que vou fazer um híbrido usando as regiões genomicas (+8k) + referencias
+   * Datação de inserção FEITO
+      * Isso eu posso fazer fácil, talvez seja melhor rodar o BLAST novamente com a LTR como query, e então pegar cada resultado.
+         * Fiz esse BLAST. 
+            * cobertura 80%, identidade 10%.
+            * Uma sequência não encontrou resultados (não identifiquei qual é) e outra encontrou apenas um (CM001382.3Fca9.0B2enfelvATGG).
+               * Talvez reduzir a cobertura?
+         * Ao invés disso, fiz a anotação por referência do Geneious e peguei um arquivo fasta com todas as LTRs identificadas.
+            * Agora, estou usando o Aliview para alinhar os pares de LTRs individualmente, através do Muscle v. 3.8.425
+      * A melhor base de dados seriam os enFeLV prontos. Só teria que fazer a base de dados antes, mas isso é rapidinho.
+      * Com as sequências em mãos, é só formatar para .fasta e rodar a matriz.
+   * Posição no genoma  FEITO
+      * Para isso, vou usar de query os enFeLV prontos contra os genomas como db. Vou ajustar a identidade e cobertura para 100, já que são elementos do próprio genoma.
+      * Depois disso é só fazer o arquivo de anotação e a imagem.
+   * Tabela FEITO
+      * Tamanho mínimo e máximo, média, genes presentes?
+
+
+Filogenias Finais
+* Padronizar nomes dos arquivos por regex:
+   * Encontrar: >\w\w.+?(Fc\w\d.\d)(\w\d?)enfelv(\w\w\w\w)(?:_\(reversed\))?_-_similar_to_(.+\n)
+   * Substituir: >\1_\2_enfelv_\3_\4
+* Falta agora renomear as referências antes de juntá-las às minhas sequências. Vou usar de base as referências para genomas completos, a qual eu já renomeei.
+   * Os arquivos certos estão na pasta: Árvores 
+
+
+* Concatenar referências + regiões genômicas + arquivos do geneious:
+cat referencias_pol_ERV_XRV.txt enfelv_pol_8k.fas 22_09_23_ori_pol_final.txt > 22_09_23_ori_pol_referencias.fas
+cat referencias_gag_ERV_XRV.txt enfelv_gag_8k.fas 22_09_23_ori_gag_final.txt > 22_09_23_ori_gag_referencias.fas
+cat referencias_env_ERV_XRV.txt enfelv_env_8k.fas 22_09_23_ori_env_final.txt > 22_09_23_ori_env_referencias.fas
+cat referencias_completo_ERV_XRV.txt enfelv_completo_8k.fas 22_09_23_ori_completo_final.fasta > 22_09_23_ori_completo_referencias.fas
+cat referencias_LTR_ERV_XRV.txt 22_09_23_ori_LTR_final.txt > 22_09_23_ori_LTR_referencias.fas
+
+
+* Alinhamentos com o MAFFT
+mafft --auto 22_09_27_ori_LTR_referencias.fas > 22_09_27_aln_LTR_referencias_final.fas
+mafft --auto 22_09_27_ori_gag_referencias.fas > 22_09_27_aln_gag_referencias_final.fas
+mafft --auto 22_09_27_ori_pol_referencias.fas > 22_09_27_aln_pol_referencias_final.fas
+mafft --auto 22_09_27_ori_env_referencias.fas > 22_09_27_aln_env_referencias_final.fas
+mafft --auto 22_09_27_ori_completo_referencias.fas > 22_09_27_aln_completo_referencias_final.fas
+
+
+* Trimar com o Trimal
+trimal -automated1 -in 22_09_27_aln_completo_referencias_final.fas -out 22_09_27_trm_completo_referencias_final.fas
+trimal -automated1 -in 22_09_27_aln_gag_referencias_final.fas -out 22_09_27_trm_gag_referencias_final.fas
+trimal -automated1 -in 22_09_27_aln_pol_referencias_final.fas -out 22_09_27_trm_pol_referencias_final.fas
+trimal -automated1 -in 22_09_27_aln_env_referencias_final.fas -out 22_09_27_trm_env_referencias_final.fas
+trimal -automated1 -in 22_09_27_aln_LTR_referencias_final.fas -out 22_09_27_trm_LTR_referencias_final.fas
+trimal -automated1 -in 22_09_27_aln_completo_referencias_final.fas -out 22_09_27_trm_completo_referencias_final.fas
+
+
+* Cortar sequências >50%:
+gag: 598
+pol: 1635
+env: 869
+completo: 3752
+LTR: 150
+
+
+* Inferir filogenias:
+   * Copiar arquivos em pastas chamadas arv_”região”
+   * Renomear os alinhamentos para _arv_
+mkdir arv_gag
+mkdir arv_pol
+mkdir arv_env
+mkdir arv_completo
+mkdir arv_env
+mv 22_09_27_trm_completo_referencias_final.fas ./arv_completo/22_09_27_arv_completo_referencias_final.fas
+mv 22_09_27_trm_LTR_referencias_final.fas ./arv_LTR/22_09_27_arv_LTR_referencias_final.fas
+mv 22_09_27_trm_gag_referencias_final.fas ./arv_gag/22_09_27_arv_gag_referencias_final.fas
+mv 22_09_27_trm_pol_referencias_final.fas ./arv_pol/22_09_27_arv_pol_referencias_final.fas
+mv 22_09_27_trm_env_referencias_final.fas ./arv_env/22_09_27_arv_env_referencias_final.fas
+iqtree -s ./arv_pol/22_09_27_arv_pol_referencias_final.fas -m TEST -bb 1000 -alrt 1000
+iqtree -s ./arv_gag/22_09_27_arv_gag_referencias_final.fas -m TEST -bb 1000 -alrt 1000
+iqtree -s ./arv_env/22_09_27_arv_env_referencias_final.fas -m TEST -bb 1000 -alrt 1000
+iqtree -s ./arv_LTR/22_09_27_arv_LTR_referencias_final.fas -m TEST -bb 1000 -alrt 1000
+iqtree -s ./arv_completo/22_09_27_arv_completo_referencias_final.fas -m TEST -bb 1000 -alrt 1000
+
+
+Acabei de perceber que as referências que eu usei não tem o Epsilonretrovírus, vou voltar ao início e repetir o processo.
+* Parei em renomear as referências. Quando isso estiver pronto, é só rodar novamente os mesmos comandos.
+Análise de resultados de BLAST LTR para regiões genômicas
+Aqui, vou detalhar o passo-a-passo do que fiz para analisar (pelo menos inicialmente) as regiões genômicas onde três resultados de LTR foram encontrados.
+* Usando o programa Aliview: (Muscle v. 3.8.425)
+1. Pegar os dois fragmentos em um alinhamento separado e realinhá-los
+   1. Entre os fragmentos CM001384.3_47516866_47534389 e CM001384.3_47512698_47530209 foram encontrados 4168 nt de diferença.
+2. Em seguida, merge as duas sequências (menu edit)
+3. Depois, pegar os hits das LTRs de cada sequência e botá-los num arquivo separado. Alinhá-los entre si.
+   1. Entre as LTRs dos fragmentos CM001384.3_47516866_47534389 e CM001384.3_47512698_47530209 foram encontrados dois grupos de LTRs. As LTRs “do meio” são diferentes das outras quatro, que aparentemente formam uma cópia de enFeLV entre si.
+4. Por fim, dupliquei um representante de cada grupo de LTRs em um arquivo separado, e então alinhei-o com o fragmento mergezado.
+   1. O grupo de 4 LTRs se alinha perfeitamente com a primeira e última posição.
+   2. O grupo “do meio” se alinha apenas com a posição “do meio” do fragmento, enquanto a duplicação se alinha imperfeitamente com uma das cópias do outro grupo.
+
+
+Fiz esse processo para dois pares de fragmentos, chegando aos mesmos resultados. Para os outros, vou apenas testar a diferença no início dos dois fragmentos e subtrair essa diferença do nucleotídeo de início de cada hit para ver se se alinham.
+
+
+Agora, a pergunta que não quer calar: o que isso quer dizer?
+Anotação dos genomas
+* Fiz a anotação automaticamente pelo geneious, usando de base a anotação já encontrada na sequência que usei de query (AY364319.1).
+   * O geneious só faz a anotação do mesmo tamanho que a original, provavelmente porque ele não considera a possibilidade de genes truncados. Manualmente olhei os alinhamentos de cada anotação pra cortar partes que não eram similares.
+* Algumas regiões parecem ter sido preferencialmente perdidas em alguns genes: 
+   * Fim da gag (nucleocapsídeo/fim do capsídeo)
+   * Início da pol (protease, talvez parte da RT)
+   * Início de env (proteína de superfície)
+      * A proteína de superfície é exatamente a região que recombina pra formar FeLV-B.
+* Vou tentar refazer a anotação, agora usando também o genoma de referência de FeLV exógeno: NC_001940
+   * Essa sequência tem anotações separadas pra cada proteína dos genes. Com isso posso ver quais foram perdidas e quais estão parcialmente presentes.
+   * Todas as anotações com menos de 80% de similaridade foram checadas manualmente.
+   * Identifiquei alguns padrões novos:
+      * série de 4 indels na proteína SU
+
+
+29/09/2022: terminei a curadoria na cópia 19 (Fca9.0 GCTG) vou continuar amanhã
+30/09: acabei com todas.
+* Foram adicionadas anotações para cada peptídeo individual, mesmo que esteja truncado, através de similaridade com o genoma de referência do NCBI de FeLV exógeno.
+* Os CDS foram modificados de acordo com as ORFs encontradas também
+
+
+Referência para olhar a anotação de LTRs: Structure and function of endogenous feline leukemia virus long terminal repeats and adjoining regions.
+Tentativa 4 (25/10/2022)
+Refinar filogenias
+* Vou refazer as filogenias, agora reduzindo meu dataset para usar apenas FeLV e enFeLV. Vou fazer isso para melhorar a definição da árvore e conseguir visualizar
+   * Só será necessário fazer isso no caso de env, em que houve um erro quanto a FeLV. De resto, só refaria as árvores para retirar as regiões genômicas delas.
+
+
+Comentários sobre as árvores refinadas:
+* Na árvore das sequências completas, foi possível reparar em algumas sequências individuais com uma distância maior em relação as outras. Voltando para o alinhamento, há diversas mutações pontuais independentes e únicas a essas cópias. Elas são também as cópias com maiores datações do Fca9.0
+   * Isso pode ser um resultado super interessante ou então um artefato, como discernir?
+      * Talvez uma recombinação? Com o que? Uma das cópias inclusive tem uma Pol tão diferenciada que não é reconhecida como enFeLV
+   * Cópias com mesma assinatura entre indivíduos de F. catus formaram grupos monofiléticos. Um dos grupos (assinatura ACAG) incluiu a cópia “enFeLV-clone1” da literatura.
+      * Essas cópias formaram os primeiros grupos a divergir entre os enFeLV
+      * Pesquisar porque GAAC de Fca126 não apareceu na árvore. Talvez tenha que refazê-la.
+   * As outras cópias da literatura formaram outro grupo monofilético. Nesse grupo, também foram encontrados uma cópia minerada com mesma assinatura (GGAG) que aquela da literatura.
+   * Um enorme grupo monofilético foi formado também entre as sequências de Felis chaus. A sequência de Felis catus com assinatura: CTGT forma o grupo externo desse grupo, porém com baixo suporte de ramo (0/59)
+* A árvore de env parece bastante interessante: enFeLV parece se agrupar com ERV-DC, apesar de serem dois grupos de ERVs com origem distintas. Isso poderia apontar para modificações convergentes originadas do hospedeiro.
+   * Vou refazer essa árvore com algumas modificações:
+      * Modificar nomes das sequências de referência.
+      * Retirar sequências mineradas +8k
+      * Prestar atenção especial em FeLV. Porque ele foi retirado do alinhamento original?
+* Em gag, algumas sequências de enFeLV se posicionaram externamente a FeLV exógeno. Novamente foram sequências de Felis catus encontradas nos dois indivíduos.
+   * Por outro lado, algumas sequências (assinatura ACAG) se inseriram na parte interna da árvore, novamente formando um grupo monofilético com enfeLV-clone1
+   * Poucas sequências de Felis catus se inseriram no grupo mais interno da árvore, jque é composto majoritariamente por F. chaus. Exceções são: ACAG, GGAG, CTGT e GTAT.
+      * Uma afirmação mais robusta é que 100% das sequências de Felis chaus foram encontradas dentro da parte mais interna da árvore.
+* Pol formou os grupos esperados (assim como gag e a sequência completa): grupo monofilético de enFeLV com FeLV, MLV e ERV-DC respectivamente mais externos a ele. Em seguida outros Gammaretrovirus.
+   * Dentro do clado enFeLV, há menos cópias mas já é possível notar que as diferenças são mais marcantes que aquelas encontradas em outras regiões.
+   * Novamente, um grupo monofilético foi formado pelos enFeLV de Felis chaus, mas a pol de Fca126 CTGT se inseriu nesse grupo.
+   * Novamente, sequências com mesma assinatura entre indíviduos de Felis catus formaram grupos monofiléticos com alto suporte.
+
+
+Imagem Integrada
+Amanhã preciso começar a trabalhar na imagem integrada.
+* Pegar filogenia final das sequências completas
+   * Adicionar sequência faltando - GGAG em Fca9.0 - e refazer filogenia.
+   * Checar que outras sequências estão faltando e porque.
+   * REFAZER FILOGENIAS - comandos:
+
+
+mafft --auto 22_11_01_ref_completo.fas > 22_11_01_aln_completo.fas
+trimal -automated1 -in 22_11_01_aln_completo.fas -out 22_11_01_trm_completo.fas
+
+
+* Checar alinhamento e se nenhuma sequência minerada foi perdida. Caso isso tenha acontecido, mudar parâmetros do trimal ou refazer alinhamento com a opção -gappyout
+* Botar arquivo pronto em outra pasta e renomear para “arv”.
+
+
+
+
+iqtree -s 22_11_01_arv_completo.fas -m TEST -bb 1000 -alrt 1000
+
+
+* Primeira tentativa:
+   * Durante o alinhamento + trimal não foi perdida nenhuma sequência.
+   * Alinhamento final com 2300 pb.
+      * Algumas sequências se posicionaram fora de enFeLV
+* Segunda tentativa
+   * Nenhuma sequência perdida.
+   * Removi sequências de ERV-DC mais curtas que 7000 pb para melhorar o alinhamento.
+   * Alinhamento final com 2800 pb.
+      * Novamente sequências se posicionaram fora de enFeLV, porém como grupo externo de FeLV.
+* Terceira tentativa
+   * Nenhuma sequência perdida.
+   * Usei a opção --leavegappyregion no mafft
+   * Alinhamento final com 10700 pb #esperança
+   * Também não funcionou
+* Última tentativa:
+   * Nenhuma sequência perdida
+   * O problema realmente era de sequências reverso-complementares. Ao final, foi possível fazer a árvore final: 22_11_01_arv_completo_gpout.fas.treefile 
+
+
+
+
+
+
+* Pegar imagem dos cariótipos
+   * Refazer imagem:
+      * Separando indivíduos de Fca
+      * Botando assinatura na imagem estática
+   * FEITO: 22_11_01_img_posicoes_triploide.html 
+* Pegar datações
+* Pegar anotações dos genomas
+   * Qual anotação? Mais simples, só com genes, ou então mais detalhada com cada proteína?
+   * Peguei todas, vou tentar primeiro usar a completa, se reclamarem já tenho as outras prontas.
+
+
+Fiz separadamente uma junção da filogenia com a composição genômica e da filogenia com o cariótipo. A composição genômica claramente tem relação com a filogenia, mas o cariótipo não.
+* No fim das contas, a imagem do cariótipo só tava ficando confusa, então a abandonei.
+* Agora, quero fazer a versão final com outras informações de maneira mais simples.
+* Essa versão foi feita, unindo a filogenia com a anotação dos genomas, a informação do cromossomos com o cariótipo desse cromossomo específico e a assinatura.
+
+
+  
+
+
+
+O próximo passo agora é marcar uma reunião com o Filipe, André e Lili. Filipe já sugeriu quinta as 11h. Falta ver se os outros concordam.
+* Pode ser uma boa preparar uma apresentação simples:
+   * Essa imagem.
+   * Cariótipos separados.
+   * Comparação de cópias altamente divergentes de Fca9.0.
+   * Levantar possibilidade de adicionar mais um indivíduo de Felis catus.
+   * Usar Retrotector para buscar LTRs solo?
+Extras:
+FeLV-B
+* Pesquisar tipo de recombinação que gera FeLV-B, se é recombinação homóloga, sítio-específica, etc.
+   * Feline Leukemia Virus (FeLV) Endogenous and Exogenous Recombination Events Result in Multiple FeLV-B Subtypes during Natural Infection
+   * Esse artigo da Sue estuda os sítios de recombinação de diferentes cópias de FeLV-B no genoma. Não parece haver um sítio específico, mas sim diversos sítios ao longo do gene env. 
+* Depois, podemos ver qual é a melhor técnica para comparar as cópias de enFeLV em relação a isso.
+
+
+Vou tentar fazer uma árvore filogenética simples usando os meus envs, os envs de FeLV-B e FeLV-A para comparar. Se não funcionar podemos tentar técnicas mais rebuscadas, usando os sítios de recombinação.
+* Usei as anotações de “similar to env” do geneious para extrair esse gene das minhas cópias.
+* Vou pegar todos os FeLV-B presentes no NCBI, pesquisando “FeLV-B” e “Feline Leukemia Virus subtype B”
+* Além disso, peguei o FeLV-A e o MLV do RefSeq.
+
+
+Agora, comandos:
+mafft --auto 23_02_13_ori_env_en.ex.FeLV_MLV.fasta > 23_02_13_aln_env_en.ex.FeLV_MLV.fasta
+trimal -automated1 -in 23_02_13_aln_env_en.ex.FeLV_MLV.fasta -out 23_02_13_trm_env_en.ex.FeLV_MLV.fasta
+
+
+Após trimar, eu abri o arquivo no Aliview e editei as sequências:
+* Separei os envs de cada cópia duplicada em .1 e .2, na ordem da sequência.
+* Separei o alinhamento em dois arquivos, um para a região 5’ (SU) e um para a região 3’ (TM).
+   * Talvez a separação não esteja tão certinha em relação aos peptídeos, mas é uma aproximação.
+* Separei os dois arquivos em duas pastas para fazer as árvores:
+
+
+iqtree -s ./23_02_13_arv_SU_en.ex.FeLV_MLV/23_02_13_arv_SU_en.ex.FeLV_MLV.fasta -m TEST -bb 1000 -alrt 1000
+iqtree -s ./23_02_13_arv_TM_en.ex.FeLV_MLV/23_02_13_arv_TM_en.ex.FeLV_MLV.fasta -m TEST -bb 1000 -alrt 1000
+
+
+Já tive um bom indício de que a cópia ATAA, no cromossomo X, pode estar mais intimamente relacionada com FeLV-B na região do SU. Vou refazer as árvores, dessa vez usando apenas a região de FeLV-B que recombinou com enFeLV. Para descobrir que região é essa, vou fazer um primeiro alinhamento apenas com FeLV-B e enFeLV, e só depois adicionar as outras sequências.
+
+
+mafft --auto ./Tentativa_2/23_02_13_ori_enFeLV.FeLV-B_env.fasta > 23_02_13_aln_enFeLV.FeLV-B_env.fasta
+trimal -automated1 -in 23_02_13_aln_enFeLV.FeLV-B_env.fasta -out 23_02_13_trm_enFeLV.FeLV-B_env.fasta
+aliview 23_02_13_trm_enFeLV.FeLV-B_env.fasta
+* Já foi um começo, mas percebi que o ponto de recombinação de algumas das sequências a 5’ não foi encontrado - se expandindo além do início de env
+
+
+mafft --auto ./Tentativa_2/23_02_13_ori_enFeLV.FeLV-B_SU.fasta > ./Tentativa_2/23_02_13_aln_enFeLV.FeLV-B_SU.fasta
+trimal -automated1 -in ./Tentativa_2/23_02_13_aln_enFeLV.FeLV-B_SU.fasta -out ./Tentativa_2/23_02_13_trm_enFeLV.FeLV-B_SU.fasta
+aliview ./Tentativa_2/23_02_13_trm_enFeLV.FeLV-B_SU.fasta
+
+
+Pronto! A árvore final está pronta, e parece que a cópia ATAA está relacionada sim a FeLV-B.
+
+
+IGV
+Com o IGV eu vou observar os arredores de cada cópia de enFeLV. Vou estabelecer como uma base uma região de 50kb a 5’ e a 3’ delas.
+* Para abrir o IGV, é necessário ir na pasta de origem dele, no EITA: ~/Documents/IGV_Linux_2.15.4
+* A forma que eu consegui para usar o IGV foi com:
+   * Arquivo .FASTA do genoma, que é adicionado com a opção Genomes > Load Genome from File
+   * Arquivo .gff ou .gtf, que é adicionado pela opção File > Load from File
+      * Nesse caso, é necessário escolher Cancel na caixa que se abre
+   * Depois disso, estou usando a opção de “Define a Region of Interest” para marcar cada cópia de enFeLV.
+      * Marco provisoriamente a região de 100kb circundantes da cópia separadamente. Depois disso, uso a barra do genoma para ir checando cada gene nessa região, e então estou anotando-os aqui.
+Fca126:
+* GAAC (chB1:204342318-204346837): 
+   * Compartilhado entre os dois indivíduos
+   * TACC3 (204370388..204382651 complement)
+      * Transforming acidic coiled-coil containing protein 3
+      * This gene encodes a member of the transforming acidic colied-coil protein family. The encoded protein is a motor spindle protein that may play a role in stabilization of the mitotic spindle. This protein may also play a role in growth a differentiation of certain cancer cells. [provided by RefSeq, Nov 2011]
+      * Elevated expression of transforming acidic coiled-coil-containing protein 3 (TACC3) reflects aggressiveness of primary central nervous system lymphomas 
+   * SLBP (204389483..204466918) 
+      * stem-loop binding protein
+      * This gene encodes a protein that binds to the stem-loop structure in replication-dependent histone mRNAs. Histone mRNAs do not contain introns or polyadenylation signals, and are processed by endonucleolytic cleavage. The stem-loop structure is essential for efficient processing but this structure also controls the transport, translation and stability of histone mRNAs. Expression of the protein is regulated during the cell cycle, increasing more than 10-fold during the latter part of G1. [provided by RefSeq, Jul 2008]
+      * Stem-loop binding protein is a multifaceted cellular regulator of HIV-1 replication 
+   * FGFR3 (204303604..204320499, complement) 
+      * Fibroblast Growth Factor Receptor 3
+      * This gene encodes a member of the fibroblast growth factor receptor (FGFR) family, with its amino acid sequence being highly conserved between members and among divergent species. FGFR family members differ from one another in their ligand affinities and tissue distribution. A full-length representative protein would consist of an extracellular region, composed of three immunoglobulin-like domains, a single hydrophobic membrane-spanning segment and a cytoplasmic tyrosine kinase domain. The extracellular portion of the protein interacts with fibroblast growth factors, setting in motion a cascade of downstream signals, ultimately influencing mitogenesis and differentiation. This particular family member binds acidic and basic fibroblast growth hormone and plays a role in bone development and maintenance. Mutations in this gene lead to craniosynostosis and multiple types of skeletal dysplasia. [provided by RefSeq, Aug 2017]
+      * Também relacionado a diferentes tipos de câncer em humanos, especialmente carcinomas: The Role of the Key Differentially Mutated Gene FGFR3 in the Immune Microenvironment of Bladder Cancer 
+   * LOC123385186 (204302122..204303932)
+      * Não caracterizado
+* AAAC (chB1:153791212-153795415):
+   * Não há nada a 50kb de distância.
+* CTGT (chB2:29977767-29986447):
+   * FLAI-K (29931653..30115820)
+      * saoe class I histocompatibility antigen, A alpha chain-like
+      *  sem ortólogos em humanos
+   * LOC109499541  (29965298..29989576, complement)
+      * não caracterizado
+   * LOC105260391 (29977840..29986454, complement)
+      * bromodomain-containing protein 4-like
+   * LOC109499537 (29991473..29996000) 
+      * não caracterizado
+   * LOC123385333 (30000744..30001505, complement)
+      * não caracterizado 
+   * LOC109499539 (30028077..30030012)
+      * não caracterizado  
+* ATGG(chB2:3162775-3171386):
+   * Compartilhado entre os dois indivíduos
+   * POM121L2 (3118477..3125215)
+      * POM121 transmembrane nucleoporin like 2
+      * Predicted to enable nuclear localization sequence binding activity. Predicted to be a structural constituent of nuclear pore. Predicted to be involved in RNA export from nucleus and protein import into nucleus. Predicted to be part of nuclear pore. [provided by Alliance of Genome Resources, Apr 2022]
+      * Relacionado a esquizofrenia: Common variants on chromosome 6p22.1 are associated with schizophrenia
+   * TRNAS-GCU (3131176..3131257, complement)
+      * transfer RNA serine (anticodon GCU)
+   * TRNAM-CAU (3128296..3128367)
+      * transfer RNA methionine (anticodon CAU)
+   * TRNA-CUG (3134273..3134344, complement) 
+   * TRNAV-AAC (3140198..3140270, complement)
+   * TRNAI-AAU
+   * TRNAV-AAC
+   * TRNAT-AGU
+   * TRNAV-UAC
+   * TRNAI-AAU
+   * LOC123385267 (3180385..3182210)
+      * Não caracterizado
+   * PRSS16 (3184369..3192446, complement)
+      * serine protease 16
+      * This gene encodes a serine protease expressed exclusively in the thymus. It is thought to play a role in the alternative antigen presenting pathway used by cortical thymic epithelial cells during the positive selection of T cells. The gene is found in the large histone gene cluster on chromosome 6, near the major histocompatibility complex (MHC) class I region. A second transcript variant has been described, but its full length nature has not been determined. [provided by RefSeq, Jul 2008]
+      * Polymorphisms in the gene encoding thymus-specific serine protease in the extended HLA complex: a potential candidate gene for autoimmune and HLA-associated diseases
+   * LOC109500252 (3188216..3228550)
+      * Não caracterizado
+   * TRNAV-AAC
+   * TRNAL-UAA
+   * TRNAR-ACG
+   * TRNAS-CGA
+   * LOC102901177
+      * Não caracterizado
+   * TRNAV-CAC
+* ACAG (chB4:83104796-83113473)
+   * Compartilhado entre os dois indivíduos
+   * ATP5F1B (83059535..83066192, complement)
+      * ATP synthase F1 subunit beta
+      * This gene encodes a subunit of mitochondrial ATP synthase. Mitochondrial ATP synthase catalyzes ATP synthesis, utilizing an electrochemical gradient of protons across the inner membrane during oxidative phosphorylation. ATP synthase is composed of two linked multi-subunit complexes: the soluble catalytic core, F1, and the membrane-spanning component, Fo, comprising the proton channel. The catalytic portion of mitochondrial ATP synthase consists of 5 different subunits (alpha, beta, gamma, delta, and epsilon) assembled with a stoichiometry of 3 alpha, 3 beta, and a single representative of the other 3. The proton channel consists of three main subunits (a, b, c). This gene encodes the beta subunit of the catalytic core. [provided by RefSeq, Jul 2008]
+      *  Profiling of rotavirus 3'UTR-binding proteins reveals the ATP synthase subunit ATP5B as a host factor that supports late-stage virus replication
+      * Hypermethylation of CpG sites at the promoter region is associated with deregulation of mitochondrial ATPsyn-β and chemoresistance in acute myeloid leukemia
+   * LOC111561567 (83063554..83063624, complement)
+      * small nucleolar RNA SNORD59
+   * LOC111561568 (83065217..83065291, complement)    
+      * small nucleolar RNA SNORD59
+   * PTGES3 (83075270..83096472, complement)
+      * prostaglandin E synthase 3
+      * This gene encodes an enzyme that converts prostaglandin endoperoxide H2 (PGH2) to prostaglandin E2 (PGE2). This protein functions as a co-chaperone with heat shock protein 90 (HSP90), localizing to response elements in DNA and disrupting transcriptional activation complexes. Alternative splicing results in multiple transcript variants. There are multiple pseudogenes of this gene on several different chromosomes. [provided by RefSeq, Feb 2016]
+      * PTGES3 is a Putative Prognostic Marker in Breast Cancer
+   * LOC111561459 (83108045..83113611, complement)
+      * bromodomain-containing protein 4-like
+   * LOC123386615 (83119957..83126221)
+      * Não caracterizado
+   * LOC101080306 (83120734..83122574)
+      * cytohesin-2-like
+      * pseudogene
+   * NACA (83134236..83146680, complement)
+      * nascent polypeptide associated complex subunit alpha
+      * This gene encodes a protein that associates with basic transcription factor 3 (BTF3) to form the nascent polypeptide-associated complex (NAC). This complex binds to nascent proteins that lack a signal peptide motif as they emerge from the ribosome, blocking interaction with the signal recognition particle (SRP) and preventing mistranslocation to the endoplasmic reticulum. This protein is an IgE autoantigen in atopic dermatitis patients. Alternative splicing results in multiple transcript variants, but the full length nature of some of these variants, including those encoding very large proteins, has not been determined. There are multiple pseudogenes of this gene on different chromosomes. [provided by RefSeq, Feb 2016]
+      * Overexpression of the skNAC gene in human rhabdomyosarcoma cells enhances their differentiation potential and inhibits tumor cell growth and spreading
+      * Overexpression of the skNAC gene in human rhabdomyosarcoma cells enhances their differentiation potential and inhibits tumor cell growth and spreading
+   * PRIM1 (83136355..83174968, complement)
+      * DNA primase subunit 1
+      * The replication of DNA in eukaryotic cells is carried out by a complex chromosomal replication apparatus, in which DNA polymerase alpha and primase are two key enzymatic components. Primase, which is a heterodimer of a small subunit and a large subunit, synthesizes small RNA primers for the Okazaki fragments made during discontinuous DNA replication. The protein encoded by this gene is the small, 49 kDa primase subunit. [provided by RefSeq, Jul 2008]
+      * DNA Primase Subunit 1 Expression in Hepatocellular Carcinoma and Its Clinical Implication
+      * Inactivation of PRIM1 Function Sensitizes Cancer Cells to ATR and CHK1 Inhibitors
+      * Amplifications of DNA primase 1 (PRIM1) in human osteosarcoma
+* GGAG (chB4:1815447-1824156)  
+   * Fica numa região intrônica do gene ADARB2 (1551359..1980758, complement) 
+      * adenosine deaminase RNA specific B2 (inactive)
+      * This gene encodes a member of the double-stranded RNA adenosine deaminase family of RNA-editing enzymes and may play a regulatory role in RNA editing. [provided by RefSeq, Jul 2008]
+      * The allelic regulation of tumor suppressor ADARB2 in papillary thyroid carcinoma
+      * ADAR3 activates NF-κB signaling and promotes glioblastoma cell resistance to temozolomide
+* TGAC (chB4:45570257-45578773)
+   * Compartilhado entre os dois indivíduos
+   * LOC101089527 (45528822..45529803, complement)
+      * taste receptor type 2 member 46-like
+   * LOC101089779 (45534117..45535949)
+      * serine/threonine-protein kinase ICK-like
+      * pseudogene
+   * LOC101090025 (45548583..45549521, complement)
+      * taste receptor type 2 member 46-like
+   * SMIM10L1 (45585899..45588112)
+      * small integral membrane protein 10 like 1 
+      * Small integral membrane protein 10 like 1 downregulation enhances differentiation of adipose progenitor cells
+         * Small integral membrane protein 10 like 1 (SMIM10L1) was identified by RNA sequencing as the most significantly downregulated gene in Phosphatase and Tensin Homologue (PTEN) knockdown adipose progenitor cells (APCs). PTEN is a tumor suppressor that antagonizes the growth promoting Phosphoinositide 3-kinase (PI3K)/AKT/mechanistic Target of Rapamycin (mTOR) cascade.
+   * LOC101090527 (45602939..45604054, complement)
+      * taste receptor type 2 member 42-like
+   * LOC101090778 (45611025..45612059, complement)
+      * taste receptor type 2 member 42-like
+* CAAG (chD4:14540908-14549619)
+   * localizado na região intrônica do gene GDA (14497255..14619864)
+   * guanine deaminase 
+   * This gene encodes an enzyme responsible for the hydrolytic deamination of guanine. Studies in rat ortholog suggest this gene plays a role in microtubule assembly. Multiple transcript variants encoding different isoforms have been found for this gene. [provided by RefSeq, Nov 2011]
+Fca9.0
+* TTAG (chB1:194558013-194562203)
+   * QDPR (191756121..191774436)
+      * quinoid dihydropteridine reductase
+      * This gene encodes the enzyme dihydropteridine reductase, which catalyzes the NADH-mediated reduction of quinonoid dihydrobiopterin. This enzyme is an essential component of the pterin-dependent aromatic amino acid hydroxylating systems. Mutations in this gene resulting in QDPR deficiency include aberrant splicing, amino acid substitutions, insertions, or premature terminations. Dihydropteridine reductase deficiency presents as atypical phenylketonuria due to insufficient production of biopterin, a cofactor for phenylalanine hydroxylase. [provided by RefSeq, Jul 2008]
+   *  CLRN2 (191737479..191745711, complement)
+      * clarin 2
+      * This gene belongs to the clarin family of genes. The clarins appear to belong to a large superfamily of small integral membrane glycoproteins with four transmembrane domains. The exact function of this gene is unknown. [provided by RefSeq, Oct 2008] 
+* GAAC (chB1:207201450-207205977)
+   * Nada na região de 20kb ao redor da cópia
+   * Compartilhado entre os dois indivíduos
+   * TACC3 (207229907..207242541, complement)
+      * Transforming acidic coiled-coil containing protein 3
+      * This gene encodes a member of the transforming acidic colied-coil protein family. The encoded protein is a motor spindle protein that may play a role in stabilization of the mitotic spindle. This protein may also play a role in growth a differentiation of certain cancer cells. [provided by RefSeq, Nov 2011]
+      * Elevated expression of transforming acidic coiled-coil-containing protein 3 (TACC3) reflects aggressiveness of primary central nervous system lymphomas 
+   * SLBP (204389483..204466918) 
+      * stem-loop binding protein
+      * This gene encodes a protein that binds to the stem-loop structure in replication-dependent histone mRNAs. Histone mRNAs do not contain introns or polyadenylation signals, and are processed by endonucleolytic cleavage. The stem-loop structure is essential for efficient processing but this structure also controls the transport, translation and stability of histone mRNAs. Expression of the protein is regulated during the cell cycle, increasing more than 10-fold during the latter part of G1. [provided by RefSeq, Jul 2008]
+      * Stem-loop binding protein is a multifaceted cellular regulator of HIV-1 replication 
+   * FGFR3 (204303604..204320499, complement) 
+      * Fibroblast Growth Factor Receptor 3
+      * This gene encodes a member of the fibroblast growth factor receptor (FGFR) family, with its amino acid sequence being highly conserved between members and among divergent species. FGFR family members differ from one another in their ligand affinities and tissue distribution. A full-length representative protein would consist of an extracellular region, composed of three immunoglobulin-like domains, a single hydrophobic membrane-spanning segment and a cytoplasmic tyrosine kinase domain. The extracellular portion of the protein interacts with fibroblast growth factors, setting in motion a cascade of downstream signals, ultimately influencing mitogenesis and differentiation. This particular family member binds acidic and basic fibroblast growth hormone and plays a role in bone development and maintenance. Mutations in this gene lead to craniosynostosis and multiple types of skeletal dysplasia. [provided by RefSeq, Aug 2017]
+      * Também relacionado a diferentes tipos de câncer em humanos, especialmente carcinomas: The Role of the Key Differentially Mutated Gene FGFR3 in the Immune Microenvironment of Bladder Cancer 
+   * TMEM129 (207240510..207248389)
+      * transmembrane protein 129, E3 ubiquitin ligase
+      * Enables ubiquitin protein ligase activity. Involved in protein polyubiquitination; retrograde protein transport, ER to cytosol; and ubiquitin-dependent ERAD pathway. Located in endoplasmic reticulum. [provided by Alliance of Genome Resources, Apr 2022]
+      * Identifying the ERAD ubiquitin E3 ligases for viral and cellular targeting of MHC class I
+      * TMEM129 is a Derlin-1 associated ERAD E3 ligase essential for virus-induced degradation of MHC-I
+      * A sequence variant at 4p16.3 confers susceptibility to urinary bladder cancer
+      * Charting the molecular links between driver and susceptibility genes in colorectal cancer
+   * LETM1 (207117954..207158947)
+      * leucine zipper and EF-hand containing transmembrane protein 1
+      * This gene encodes a protein that is localized to the inner mitochondrial membrane. The protein functions to maintain the mitochondrial tubular shapes and is required for normal mitochondrial morphology and cellular viability. Mutations in this gene cause Wolf-Hirschhorn syndrome, a complex malformation syndrome caused by the deletion of parts of the distal short arm of chromosome 4. Related pseudogenes have been identified on chromosomes 8, 15 and 19. [provided by RefSeq, Oct 2009]
+      * Suppression of LETM1 inhibits the proliferation and stemness of colorectal cancer cells through reactive oxygen species-induced autophagy
+      * LETM1 is a potential biomarker that predicts poor prognosis in gastric adenocarcinoma
+      * LETM1 is a potential biomarker of prognosis in lung non-small cell carcinoma        
+* ATGG (chB2:3481076-3489736)
+   * Compartilhado entre os dois indivíduos
+   * Diversos tRNAs
+   * LOC109500252
+      * não caracterizado
+   * LOC102901177
+      * não caracterizado
+   * PRSS16 (3502754..3511816, complement)
+      * presente no Fca126
+   * LOC109500263
+      * não caracterizado
+   *     POM121L2
+      * presente no Fca126
+   * LOC109500266
+      * não caracterizado 
+* TGAC (chB4:47519744-47528454)
+   * Compartilhado entre os dois indivíduos
+   * LOC102900024 (47577524..47584386, complement)
+      * sialidase-like 
+   * LOC101090527 (47545389..47546327, complement)
+      * taste receptor type 2 member 42-like
+      * presente em Fca126
+   *  SMIM10L1 (47535432..47536730)
+      * presente em Fca126
+   * LOC101090025 (47497730..47499005, complement)
+      * taste receptor type 2 member 46-like
+   * LOC101089779 (47483600..47485432)
+      * serine/threonine-protein kinase ICK-like
+   * LOC101089527 (47476905..47477881, complement)
+      * taste receptor type 2 member 46-like    
+* ACAG (chB4:85235845-85244531)
+   * Compartilhado entre os dois indivíduos
+   * HSD17B6 (85310004..85359221)
+      * hydroxysteroid 17-beta dehydrogenase 6
+      * The protein encoded by this gene has both oxidoreductase and epimerase activities and is involved in androgen catabolism. The oxidoreductase activity can convert 3 alpha-adiol to dihydrotestosterone, while the epimerase activity can convert androsterone to epi-androsterone. Both reactions use NAD+ as the preferred cofactor. This gene is a member of the retinol dehydrogenase family. [provided by RefSeq, Aug 2013]
+      * Estrogen receptor β and 17β-hydroxysteroid dehydrogenase type 6, a growth regulatory pathway that is lost in prostate cancer 
+   * NACA
+      * presente em Fca126
+   * PRIM1
+      * presente em Fca126
+   * PTGES3
+      * presente em Fca126
+   * ATP5F1B
+      * presente em Fca126
+   * BAZ2A (85154135..85188840, complement)
+      * bromodomain adjacent to zinc finger domain 2A
+      * Enables histone binding activity. Contributes to RNA polymerase I core promoter sequence-specific DNA binding activity. Predicted to be involved in DNA methylation; histone deacetylation; and negative regulation of macromolecule metabolic process. Predicted to act upstream of or within chromatin organization and histone modification. Located in cytosol and nuclear speck. [provided by Alliance of Genome Resources, Apr 2022]
+      * BAZ2A-mediated repression via H3K14ac-marked enhancers promotes prostate cancer stem cells
+      * The transcription factor 7 like 2‑binding protein TIP5 activates β‑catenin/transcription factor signaling in hepatocellular carcinoma  
+* GCTG (chD1:109672258-109680140)
+   * nenhum elemento a 3’ dessa cópia
+   * ESRRA (109619573..109628259)
+      * estrogen related receptor alpha
+      * The protein encoded by this gene is a nuclear receptor that is most closely related to the estrogen receptor. This protein acts as a site-specific transcription factor and interacts with members of the PGC-1 family of transcription cofactors to regulate the expression of most genes involved in cellular energy production as well as in the process of mitochondrial biogenesis.
+      * Computational identification of new potential transcriptional partners of ERRα in breast cancer cells: specific partners for specific targets
+      * ERRα expression in ovarian cancer and promotes ovarian cancer cells migration in vitro
+      * ERRα Expression in Bone Metastases Leads to an Exacerbated Antitumor Immune Response  
+   * TRMT112 (109628206..109629427, complement)
+      * tRNA methyltransferase activator subunit 11-2
+      * Enables protein heterodimerization activity and protein methyltransferase activity. Involved in macromolecule methylation and positive regulation of rRNA processing. Located in nucleoplasm and perinuclear region of cytoplasm. Part of protein-containing complex.
+      * WBSCR22 and TRMT112 synergistically suppress cell proliferation, invasion and tumorigenesis in pancreatic cancer via transcriptional regulation of ISG15
+      * KMT9 monomethylates histone H4 lysine 12 and controls proliferation of prostate cancer cells
+   * PRDX5 (109629659..109633125)
+      * peroxiredoxin 5  
+      * This gene encodes a member of the peroxiredoxin family of antioxidant enzymes, which reduce hydrogen peroxide and alkyl hydroperoxides. The encoded protein interacts with peroxisome receptor 1 and plays an antioxidant protective role in different tissues under normal conditions and during inflammatory processes. The use of alternate transcription start sites is thought to result in transcript variants that use different in-frame translational start codons to generate isoforms that are targeted to the mitochondrion (isoform L) or peroxisome/cytoplasm (isoform S). Multiple related pseudogenes have been defined for this gene.
+      * Peroxiredoxin V Inhibits Emodin-induced Gastric Cancer Cell Apoptosis via the ROS/Bcl2 Pathway
+      * Peroxiredoxin-5 is a negative survival predictor in ovarian cancer
+      * Peroxiredoxin 5 overexpression enhances tumorigenicity and correlates with poor prognosis in gastric cancer
+   * CCDC88B (109642428..109659105)
+      * coiled-coil domain containing 88B
+      * This gene encodes a member of the hook-related protein family. Members of this family are characterized by an N-terminal potential microtubule binding domain, a central coiled-coiled and a C-terminal Hook-related domain. The encoded protein may be involved in linking organelles to microtubules.
+      * CCDC88B is required for pathogenesis of inflammatory bowel disease
+   * RPS6KA4 (109661079..109672101)
+      * Termina logo antes do começo da cópia de enFeLV
+      * ribosomal protein S6 kinase A4 
+      * This gene encodes a member of the RSK (ribosomal S6 kinase) family of serine/threonine kinases. This kinase contains 2 non-identical kinase catalytic domains and phosphorylates various substrates, including CREB1 and ATF1. The encoded protein can also phosphorylate histone H3 to regulate certain inflammatory genes. Several transcript variants encoding different isoforms have been found for this gene. 
+      * RPS6KA4/ MIR1237 and AURKC promoter regions are differentially methylated in Wilms' tumor
+      * Screening of the Human Kinome Identifies MSK1/2-CREB1 as an Essential Pathway Mediating Kaposi's Sarcoma-Associated Herpesvirus Lytic Replication during Primary Infection  
+* GTAT (chD4:68167-76923)
+   * LOC111557577 (35294..63098, complement)
+      * Substituído por: LOC109493653
+      * não caracterizado
+   * LOC105260391 (73281..75948, complement)
+      * bromodomain-containing protein 4-like
+* TGTT (chF1:11537577-11543061)
+   * presente numa região intrônica do gene FMN2
+      * formin 2
+      * This gene is a member of the formin homology protein family. The encoded protein is thought to have essential roles in organization of the actin cytoskeleton and in cell polarity. This protein mediates the formation of an actin mesh that positions the spindle during oogenesis and also regulates the formation of actin filaments in the nucleus. This protein also forms a perinuclear actin/focal-adhesion system that regulates the shape and position of the nucleus during cell migration. Mutations in this gene have been associated with infertility and also with an autosomal recessive form of intellectual disability (MRT47). Alternatively spliced transcript variants have been identified.
+* ATAA (chX:8830718-8839615)
+   * MSL3 (8883583..8898214)
+      * MSL complex subunit 3
+      * This gene encodes a nuclear protein that is similar to the product of the Drosophila male-specific lethal-3 gene. The Drosophila protein plays a critical role in a dosage-compensation pathway, which equalizes X-linked gene expression in males and females. Thus, the human protein is thought to play a similar function in chromatin remodeling and transcriptional regulation, and it has been found as part of a complex that is responsible for histone H4 lysine-16 acetylation. This gene can undergo X inactivation. Alternative splicing results in multiple transcript variants. Related pseudogenes have been identified on chromosomes 2, 7 and 8.
+      * De novo mutations in MSL3 cause an X-linked syndrome marked by impaired histone H4 lysine 16 acetylation 
+   * LOC111558900 (8871112..8871227, complement)
+      * U4 spliceosomal RNA
+   * ARHGAP6 (8336730..8785167, complement)
+      * Rho GTPase activating protein 6
+      * This gene encodes a member of the rhoGAP family of proteins which play a role in the regulation of actin polymerization at the plasma membrane during several cellular processes. This protein is thought to have two independent functions, one as a GTPase-activating protein with specificity for RhoA, and another as a cytoskeletal protein that promotes actin remodeling. Multiple alternatively spliced transcript variants encoding different isoforms have been found for this gene.
+      * ARHGAP6 regulates the proliferation, migration and invasion of lung cancer cells
+      * Identification of Rho GTPase activating protein 6 isoform 1 variant as a new molecular marker in human colorectal tumors  
+VISTA
+* Assim que eu terminar com o IGV, vou partir para usar o mvista, um programa que pode ser usado para encontrar sintenias e transposições ao longo do genoma.
+   * https://genome.lbl.gov/vista/mvista/instructions.shtml#input
+   * Tenho que usar esse programa de alinhamento: Shuffle-LAGAN -- glocal alignment of finished sequences. It detects rearrangements and inversions in sequences while producing a global end-to end map. If you input several sequences all pair-wise combinations will be processed and results visualized in VISTA. This is the only alignment program available through this server that can detect rearrangements and inversions.
+   * Posso adicionar anotações no formato GFF3 ou num formato VISTA que tem no Ensembl
+      * GFF3 é o formato normal do arquivo do RefSeq
+   * Só não entendi 100% ainda como que posso botar todos os genomas aqui para serem analisados, mas vou ver isso depois.
+Conclusões
+* Em Felis chaus, há muito menos pressão para supressão de replicação de enFeLV. Isso explica o maior número de cópias totais, o fato de haverem diversas duplicações ao longo do genoma, e uma média baixa de datações, apesar de não haver FeLV circulando na espécie.
+   * Cópias capazes de repĺicação - poderia ser testado pela integridade da Integrase e através de dados de transcriptoma.
+* Cópias parecem ter alta taxa de mutações pontuais dentro de suas próprias linhagens, porém grandes indels possuem alto sinal filogenético (isso é meio obvio)
