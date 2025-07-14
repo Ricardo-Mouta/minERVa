@@ -7,13 +7,20 @@ Installation
 
 Usage
 Inputs and Outputs
--report - entrega um arquivo PDF descrevendo resultados visualmente 
+-report - entrega um arquivo PDF descrevendo resultados visualmente
+
 -phylogeny - entrega um arquivo .treefile
+
 -alignment - entrega um arquivo .fasta alinhado e trimado
+
 -notrimalignment - entrega o arquivo .fasta sem trimar
+
 -karyotype entrega - o arquivo do ChromoMap
+
 -annotation - entrega uma tabela com as anotações (buscar um programa de linha de comando para anotação).
+
 -orf - entrega uma tabela com as ORFs encontradas
+
 -stopcodons - entrega uma tabela com o número de stop codons em cada frame de leitura de cada cópia
 
 Running minERVa
