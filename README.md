@@ -35,7 +35,7 @@ Besides the mandatory arguments, some flexibility has already been included in m
   path to the input file(s) containing the genomes to be mined in .FASTA format. It is possible to input multiple genomes as a single concatenated file or in different files by specifying each path separated by a space.
   
   -dbready, -ready      
-  Signals that the file provided by the genome argument is already a database for the BLAST+ program
+  signals that the file provided by the genome argument is already a database for the BLAST+ program
   
   -query QUERY [QUERY ...], -q QUERY [QUERY ...]
   path to the input file containing the LTR sequence to be used as query in BLAST searches.
@@ -50,13 +50,13 @@ Besides the mandatory arguments, some flexibility has already been included in m
   a numerical value representing the number of base pairs around the hit to remove duplicate results. Default is 20000 base pairs.
   
   -dbkeep, -keep
-  Signals that the database prepared by this program should not be deleted by the end of the program run. This argument is ignored if the option -dbready is active.
+  signals that the database prepared by this program should not be deleted by the end of the program run. This argument is ignored if the option -dbready is active.
   
   -LTR_range LTR_RANGE, -LTRr LTR_RANGE
   a numerical value representing the number of base pairs around the hit to ensure a perfect trim of the ERV limits. Default is 500 base pairs.
   
   -prefix PREFIX, -run PREFIX, -nick PREFIX
-  A string that contains a prefix or nickname for a single minERVa run.
+  a string that contains a prefix or nickname for a single minERVa run.
 
 # FUTURE DIRECTIONS:
 # Inputs and Outputs
