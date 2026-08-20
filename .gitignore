@@ -1,0 +1,42 @@
+# Snakemake
+.snakemake/
+
+# Outputs do Pipeline
+results/
+#resources/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Arquivos temporários do BLAST ou datasets
+*.zip
+*.fna
+*.nin
+*.nsq
+*.nhr
+*.ndb
+*.not
+*.ntf
+*.nto
+
+# Outros arquivos gerados durante execuções de teste
+test.fasta
+sequence.gb
