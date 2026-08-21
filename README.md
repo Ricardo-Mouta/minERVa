@@ -16,6 +16,9 @@ The minERVa program requires no installation. However, it requires the certain p
 Reminder: the programs must be available in the same working directory as minERVa, either add said programs to PATH or use a package manager such as Conda.
 
 # Usage
+
+> **Nota:** Para instruções detalhadas sobre a execução da nova estratégia do pipeline baseada em Snakemake (Download automático, BLAST Local e uso em HPC SLURM), leia o guia em: [resources/docs/HOWTO_RUN.md](resources/docs/HOWTO_RUN.md)
+
 In order to use minERVa, the user must simply call upon the program in a directory that contains "minERVa_021.py", "retroviridae_references.fasta", the query and genome files. The basic command to activate minERVa is:
 
 python3 minERVa_021.py -genome 'genome_file' -query 'query_file'

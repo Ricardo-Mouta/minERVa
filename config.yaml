@@ -1,0 +1,24 @@
+# Configurações do minERVa Snakemake Pipeline
+
+# Arquivo contendo a lista de genomas (um Accession do NCBI por linha)
+genomes_list: "genomes.txt"
+
+# Diretório contendo os arquivos GenBank anotados (.gbk)
+gbk_dir: "gbk_files"
+
+# Alvos (targets) a serem extraídos dos arquivos GBK e usados como query no BLAST
+# Valores possíveis incluem: "LTR", "gag", "pol", "env", "complete"
+targets:
+  #- "LTR"
+  #- "gag"
+  - "pol"
+  #- "env"
+  #- "complete"
+
+# Parâmetros para a busca BLAST
+blast_params:
+  hspcoverage: 50
+  identity: 80
+  evalue: 1e-5
+  context_range: 20000
+  LTR_range: 500
